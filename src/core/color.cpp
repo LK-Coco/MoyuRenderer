@@ -2,6 +2,13 @@
 
 namespace MR {
 
+Color::Color() {
+    r = 0;
+    g = 0;
+    b = 0;
+    a = 1;
+}
+
 Color Color::black = Color(0, 0, 0, 1);
 Color Color::blue = Color(0, 0, 1, 1);
 Color Color::clear = Color(0, 0, 0, 0);

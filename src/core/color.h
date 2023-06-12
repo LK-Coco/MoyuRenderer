@@ -4,6 +4,8 @@ namespace MR {
 
 class Color {
 public:
+    Color();
+
     Color(float red, float green, float blue, float alpha = 1)
         : r(red),
           g(green),
