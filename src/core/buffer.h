@@ -14,13 +14,20 @@ enum BufferLayout {
 template <typename T>
 class Buffer {
 public:
+    Buffer(uint32_t w, uint32_t h, T *data)
+        : width_(w),
+          height_(h),
+          data_(data),
+          data_size_(w * h) {}
+    virtual ~Buffer() { dipose(); }
     virtual void dipose() {
         width_ = 0;
         height_ = 0;
         inner_width_ = 0;
         inner_height_ = 0;
-        T *data_ = nullptr;
         data_size_ = 0;
+        if (data_ != nullptr) delete[] data_;
+        T *data_ = nullptr;
     }
 
     inline bool empty() const { return data_ == nullptr; }

@@ -10,6 +10,7 @@ namespace MR {
 
 class Scene {
 public:
+    std::vector<Model> get_visiable_models();
     static void parse_from(std::string_view file_path);
 
 private:
