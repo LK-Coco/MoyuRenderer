@@ -103,6 +103,10 @@ private:
     size_t varyings_aligned_size_ = 0;
 
     VertexArrayObjectSoft* vao_ = nullptr;
+
+    Buffer<Color> color_buf_;
+    Buffer<float> depth_buf_;
 };
+
 
 }  // namespace MR
