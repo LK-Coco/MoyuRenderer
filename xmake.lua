@@ -1,6 +1,9 @@
 add_rules("mode.debug", "mode.release")
 set_languages("cxx20")
 
+add_requires("imgui 1.89.6",{configs = {glfw_opengl3 = true}})
+add_requires("glad 0.1.36")
+add_requires("glfw 3.3.8")
 add_requires("glm 0.9.9+8")
 add_requires("spdlog 1.11.0",{configs = {fmt_external = true}})
 
@@ -8,7 +11,7 @@ target("MoyuRenderer")
     set_kind("binary")
     add_includedirs("src")
     add_files("src/*.cpp")
-    add_packages("glm","spdlog")
+    add_packages("glm","spdlog","imgui","glfw","glad")
     set_rundir("./")
 
 --
