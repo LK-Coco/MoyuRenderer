@@ -1,8 +1,9 @@
 #include <iostream>
+#include "renderer_view.h"
 
 using namespace std;
 
 int main(int argc, char** argv) {
-    cout << "hello world!" << endl;
-    return 0;
+    MR::RendererView viewer(1280, 720);
+    viewer.run();
 }
