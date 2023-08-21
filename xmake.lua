@@ -6,12 +6,13 @@ add_requires("glad 0.1.36")
 add_requires("glfw 3.3.8")
 add_requires("glm 0.9.9+8")
 add_requires("spdlog 1.11.0",{configs = {fmt_external = true}})
+add_requires("assimp 5.2.5")
 
 target("MoyuRenderer")
     set_kind("binary")
     add_includedirs("src")
     add_files("src/*.cpp")
-    add_packages("glm","spdlog","imgui","glfw","glad")
+    add_packages("glm","spdlog","imgui","glfw","glad","assimp")
     set_rundir("./")
 
 --
