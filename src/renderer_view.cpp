@@ -53,13 +53,15 @@ void RendererView::run() {
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
 
+        renderer_.render();
+
         // 开始ImGui框架新的帧
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
         // 渲染窗口
-        render_main_side();
+        render_main_side(renderer_.get_image_id());
         render_right_side();
 
         // 渲染ImGui命令
@@ -78,7 +80,7 @@ void RendererView::run() {
     glfwTerminate();
 }
 
-void RendererView::render_main_side() {
+void RendererView::render_main_side(const GLuint& image) {
     ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_None);
     ImGui::SetNextWindowSize(ImVec2(GLfloat(width_ * 0.8f), GLfloat(height_)), ImGuiCond_None);
     {
@@ -86,7 +88,7 @@ void RendererView::render_main_side() {
                      ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
                          ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
                          ImGuiWindowFlags_MenuBar);
-        ImGui::Image((void*)(intptr_t)0, ImGui::GetContentRegionAvail(), ImVec2(0, 1),
+        ImGui::Image((void*)(intptr_t)image, ImGui::GetContentRegionAvail(), ImVec2(0, 1),
                      ImVec2(1, 0));
         ImGui::End();
     }

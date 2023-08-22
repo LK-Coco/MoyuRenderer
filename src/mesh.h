@@ -21,6 +21,19 @@ class Mesh {
 public:
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
          std::vector<Texture> textures);
+    ~Mesh() = default;
+
+    void draw();
+    void init();
+
+private:
+    std::vector<Vertex> vertices_;
+    std::vector<unsigned int> indices_;
+    std::vector<Texture> textures_;
+
+    unsigned int vao_;
+    unsigned int vbo_;
+    unsigned int ebo_;
 };
 
 }  // namespace MR

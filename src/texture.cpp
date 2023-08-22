@@ -8,15 +8,15 @@ Texture::Texture(const char* file_path) {
     id = -1;
     glGenTextures(1, &id);
 
-    int width, height, nrComponents;
-    unsigned char* data = stbi_load(file_path, &width, &height, &nrComponents, 0);
+    int width, height, nr_comp;
+    unsigned char* data = stbi_load(file_path, &width, &height, &nr_comp, 0);
     if (data) {
         GLenum format = NULL;
-        if (nrComponents == 1)
+        if (nr_comp == 1)
             format = GL_RED;
-        else if (nrComponents == 3)
+        else if (nr_comp == 3)
             format = GL_RGB;
-        else if (nrComponents == 4)
+        else if (nr_comp == 4)
             format = GL_RGBA;
 
         glBindTexture(GL_TEXTURE_2D, id);

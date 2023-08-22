@@ -1,6 +1,8 @@
 #pragma once
-
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
+
+#include "renderer.h"
 namespace MR {
 
 class RendererView {
@@ -10,7 +12,7 @@ public:
 
 private:
     void init(int width, int height);
-    void render_main_side();
+    void render_main_side(const GLuint& image);
     void render_right_side();
 
     GLFWwindow* window_;
@@ -18,6 +20,8 @@ private:
     int height_;
 
     int cur_render_mode_;
+
+    Renderer renderer_;
 };
 
 }  // namespace MR
