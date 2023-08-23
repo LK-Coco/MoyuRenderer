@@ -3,10 +3,16 @@
 
 namespace MR {
 
-class Rasterizer : Renderer {
+class Rasterizer : public Renderer {
 public:
-    void render() override;
+    Rasterizer();
+
+    void render(std::shared_ptr<Object>& object) override;
     GLuint get_image_id() const override;
+
+private:
+    GLuint fbo_;
+    GLuint texture_id_;
 };
 
 }  // namespace MR

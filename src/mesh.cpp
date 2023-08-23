@@ -8,6 +8,8 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
     vertices_ = vertices;
     indices_ = indices;
     textures_ = textures;
+
+    init();
 }
 
 void Mesh::init() {

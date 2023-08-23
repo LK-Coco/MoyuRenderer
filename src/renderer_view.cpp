@@ -1,9 +1,14 @@
+#include <iostream>
+
 #include "renderer_view.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "glad/glad.h"
+#include "model.h"
+#include "cube.h"
+#include "rasterizer.h"
 
 namespace MR {
 
@@ -47,13 +52,21 @@ void RendererView::init(int width, int height) {
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 450");
+
+    renderer_ = std::make_shared<Rasterizer>();
+    model_ = std::make_shared<Cube>();  // "assets/AfricanHead/african_head.obj"
+    shader_ =
+        std::make_shared<Shader>("assets/shaders/phone/phone.vs", "assets/shaders/phone/phone.fs");
+
+    std::cout << "init view!" << std::endl;
 }
 
 void RendererView::run() {
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
 
-        renderer_.render();
+        shader_->use();
+        renderer_->render(model_);
 
         // 开始ImGui框架新的帧
         ImGui_ImplOpenGL3_NewFrame();
@@ -61,13 +74,13 @@ void RendererView::run() {
         ImGui::NewFrame();
 
         // 渲染窗口
-        render_main_side(renderer_.get_image_id());
+        render_main_side(renderer_->get_image_id());
         render_right_side();
 
         // 渲染ImGui命令
         ImGui::Render();
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        // glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+        // glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window_);
@@ -107,7 +120,7 @@ void RendererView::render_right_side() {
             if (ImGui::BeginTabItem("Base")) {
                 const char* render_mode[] = {"rasterizer", "ray tracing"};
                 ImGui::SetNextItemWidth(window_width * 0.5f);
-                if (ImGui::Combo("Select Item", &cur_render_mode_, render_mode,
+                if (ImGui::Combo("Render Mode", &cur_render_mode_, render_mode,
                                  IM_ARRAYSIZE(render_mode))) {
                 }
 

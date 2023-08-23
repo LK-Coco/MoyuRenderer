@@ -1,4 +1,5 @@
 #include "model.h"
+#include <iostream>
 
 namespace MR {
 
@@ -8,11 +9,17 @@ Model::Model(std::string file_path) {
         importer.ReadFile(file_path, aiProcess_Triangulate | aiProcess_GenSmoothNormals |
                                          aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        // cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << endl;
+        std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
         return;
     }
 
     directory_ = file_path.substr(0, file_path.find_last_of('/'));
+}
+
+void Model::render() {
+    for (int i = 0; i < meshes_.size(); ++i) {
+        meshes_[i].draw();
+    }
 }
 
 void Model::process_node(aiNode* node, const aiScene* scene) {

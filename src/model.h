@@ -7,12 +7,15 @@
 #include "assimp/postprocess.h"
 #include "mesh.h"
 #include "texture.h"
+#include "object.h"
 
 namespace MR {
 
-class Model {
+class Model : public Object {
 public:
     Model(std::string file_path);
+
+    virtual void render() override;
 
 private:
     void process_node(aiNode* node, const aiScene* scene);

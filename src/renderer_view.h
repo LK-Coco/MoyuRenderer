@@ -3,6 +3,7 @@
 #include "GLFW/glfw3.h"
 
 #include "renderer.h"
+#include "shader.h"
 namespace MR {
 
 class RendererView {
@@ -19,9 +20,11 @@ private:
     int width_;
     int height_;
 
-    int cur_render_mode_;
+    int cur_render_mode_ = 0;
 
-    Renderer renderer_;
+    std::shared_ptr<Object> model_;
+    std::shared_ptr<Shader> shader_;
+    std::shared_ptr<Renderer> renderer_;
 };
 
 }  // namespace MR
