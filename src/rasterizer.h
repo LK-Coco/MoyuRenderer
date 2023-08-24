@@ -7,7 +7,7 @@ class Rasterizer : public Renderer {
 public:
     Rasterizer();
 
-    void render(std::shared_ptr<Object>& object) override;
+    void render(std::shared_ptr<Object>& object, std::shared_ptr<Shader>& shader) override;
     GLuint get_image_id() const override;
 
 private:

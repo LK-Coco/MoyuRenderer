@@ -9,15 +9,18 @@ constexpr glm::vec3 WORLD_UP = glm::vec3(0, 1, 0);
 
 class Camera {
 public:
-    Camera(glm::vec3 pos, glm::vec3 center, float yaw = 90.0f, float pitch = 0.0f,
-           float zoom = 45.0f)
+    Camera(glm::vec3 pos, glm::vec3 center, float yaw = 90.0f, float pitch = 0.0f)
         : position(pos),
           center(center),
           yaw(yaw),
-          pitch(pitch),
-          zoom_(zoom) {}
+          pitch(pitch) {
+        zoom_ = glm::length(position - center);
+        update();
+    }
 
     glm::mat4 get_view_mat() const { return glm::lookAt(position, center, up_); }
+
+    float get_zoom() const { return zoom_; }
 
     void set_zoom(float zoom) {
         zoom_ = zoom;
@@ -26,7 +29,7 @@ public:
 
     void on_process_mouse_scroll(float scroll) {
         zoom_ -= scroll;
-        zoom_ = glm::clamp(zoom_, 1.0f, 5.0f);
+        zoom_ = glm::clamp(zoom_, 1.0f, 100.0f);
         set_zoom(zoom_);
     }
 

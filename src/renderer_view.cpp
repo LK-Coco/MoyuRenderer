@@ -37,7 +37,10 @@ void RendererView::init(int width, int height) {
     });
     // glfwSetCursorPosCallback(window_, mouse_call_back);
     // glfwSetMouseButtonCallback(window_, mouse_button_callback);
-    // glfwSetScrollCallback(window_, scroll_callback);
+    glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset) {
+        auto view = static_cast<RendererView*>(glfwGetWindowUserPointer(window));
+        view->camera_.on_process_mouse_scroll(yoffset);
+    });
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         glfwTerminate();
@@ -53,7 +56,7 @@ void RendererView::init(int width, int height) {
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 450");
 
-    model_ = std::make_shared<Model>("assets/AfricanHead/african_head.obj");  //
+    model_ = std::make_shared<Model>("assets/AfricanHead/african_head.obj");
     shader_ =
         std::make_shared<Shader>("assets/shaders/phone/phone.vs", "assets/shaders/phone/phone.fs");
     renderer_ = std::make_shared<Rasterizer>();
@@ -66,7 +69,21 @@ void RendererView::run() {
         glfwPollEvents();
 
         shader_->use();
-        renderer_->render(model_);
+        glm::mat4 projection = glm::perspective(glm::radians(camera_.get_zoom()),
+                                                (float)width_ / (float)height_, 0.1f, 100.0f);
+        glm::mat4 view = camera_.get_view_mat();
+        shader_->set_mat4("projection", projection);
+        shader_->set_mat4("view", view);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(
+            model,
+            glm::vec3(0.0f, 0.0f, 0.0f));  // translate it down so it's at the center of the scene
+        model = glm::scale(
+            model,
+            glm::vec3(1.0f, 1.0f, 1.0f));  // it's a bit too big for our scene, so scale it down
+        shader_->set_mat4("model", model);
+
+        renderer_->render(model_, shader_);
 
         // 开始ImGui框架新的帧
         ImGui_ImplOpenGL3_NewFrame();

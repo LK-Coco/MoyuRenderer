@@ -4,6 +4,7 @@
 
 #include "renderer.h"
 #include "shader.h"
+#include "camera.h"
 namespace MR {
 
 class RendererView {
@@ -21,6 +22,8 @@ private:
     int height_;
 
     int cur_render_mode_ = 0;
+
+    Camera camera_{glm::vec3(0.f, 0.f, 15.f), glm::vec3(0.f, 0.f, 0.f)};
 
     std::shared_ptr<Object> model_;
     std::shared_ptr<Shader> shader_;

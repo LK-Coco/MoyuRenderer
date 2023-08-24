@@ -15,7 +15,7 @@ class Model : public Object {
 public:
     Model(std::string file_path);
 
-    virtual void render() override;
+    virtual void render(std::shared_ptr<Shader>& shader) override;
 
 private:
     void process_node(aiNode* node, const aiScene* scene);

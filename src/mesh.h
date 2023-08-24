@@ -2,8 +2,10 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include "glm/glm.hpp"
 #include "texture.h"
+#include "shader.h"
 
 namespace MR {
 
@@ -23,7 +25,7 @@ public:
          std::vector<Texture> textures);
     ~Mesh() = default;
 
-    void draw();
+    void draw(std::shared_ptr<Shader>& shader);
     void init();
 
 private:

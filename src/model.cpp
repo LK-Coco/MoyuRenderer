@@ -17,12 +17,13 @@ Model::Model(std::string file_path) {
 
     process_node(scene->mRootNode, scene);
 
-    std::cout << "model load ok!   " << meshes_.size() << std::endl;
+    std::cout << "model load ok!   mesh:" << meshes_.size()
+              << "   texture:" << textures_loaded_.size() << std::endl;
 }
 
-void Model::render() {
+void Model::render(std::shared_ptr<Shader>& shader) {
     for (int i = 0; i < meshes_.size(); ++i) {
-        meshes_[i].draw();
+        meshes_[i].draw(shader);
     }
 }
 
@@ -46,16 +47,17 @@ Mesh Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
         vertex.position = pos;
         glm::vec3 n{mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z};
         vertex.normal = n;
-        if (mesh->HasTextureCoords(0)) {
+        if (mesh->mTextureCoords[0]) {
             glm::vec2 uv{mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
             vertex.tex_coords = uv;
+            glm::vec3 tangent{mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z};
+            vertex.tangent = tangent;
+            glm::vec3 bt{mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z};
+            vertex.bitangent = bt;
         } else {
             vertex.tex_coords = glm::vec2(0.0f, 0.0f);
         }
-        glm::vec3 tangent{mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z};
-        vertex.tangent = tangent;
-        glm::vec3 bt{mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z};
-        vertex.bitangent = bt;
+
         vertices.push_back(vertex);
     }
     for (int i = 0; i < mesh->mNumFaces; ++i) {

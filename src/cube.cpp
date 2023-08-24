@@ -6,7 +6,7 @@ Cube::Cube() { init(); }
 
 Cube::~Cube() { glDeleteVertexArrays(1, &vao_); }
 
-void Cube::render() {
+void Cube::render(std::shared_ptr<Shader> &shader) {
     glBindVertexArray(vao_);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);

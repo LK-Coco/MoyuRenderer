@@ -11,6 +11,8 @@ public:
     Shader(const char* vertex_path, const char* fragment_path, const char* geometry_path = nullptr);
     virtual ~Shader() {}
 
+    unsigned int get_id() const { return id_; }
+
     void use();
 
     void set_bool(const std::string& name, bool val) const;

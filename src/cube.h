@@ -9,7 +9,7 @@ public:
     Cube();
     ~Cube();
 
-    virtual void render() override;
+    virtual void render(std::shared_ptr<Shader> &shader) override;
 
 private:
     void init();

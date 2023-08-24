@@ -1,3 +1,4 @@
+#include <iostream>
 #include "texture.h"
 #include "glad/glad.h"
 #include "stb_image.h"
@@ -29,6 +30,8 @@ Texture::Texture(const char* file_path) {
                         format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        std::cout << "Texture load ok! " << file_path << path << std::endl;
     }
     stbi_image_free(data);
 }
