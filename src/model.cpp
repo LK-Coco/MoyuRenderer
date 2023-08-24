@@ -14,6 +14,10 @@ Model::Model(std::string file_path) {
     }
 
     directory_ = file_path.substr(0, file_path.find_last_of('/'));
+
+    process_node(scene->mRootNode, scene);
+
+    std::cout << "model load ok!   " << meshes_.size() << std::endl;
 }
 
 void Model::render() {
@@ -26,6 +30,9 @@ void Model::process_node(aiNode* node, const aiScene* scene) {
     for (int i = 0; i < node->mNumMeshes; ++i) {
         auto mesh = process_mesh(scene->mMeshes[i], scene);
         meshes_.push_back(mesh);
+    }
+    for (unsigned int i = 0; i < node->mNumChildren; i++) {
+        process_node(node->mChildren[i], scene);
     }
 }
 Mesh Model::process_mesh(aiMesh* mesh, const aiScene* scene) {

@@ -81,6 +81,8 @@ Shader::Shader(const char* vertex_path, const char* fragment_path, const char* g
     glDeleteShader(vertex);
     glDeleteShader(fragment);
     if (geometry_path != nullptr) glDeleteShader(geometry);
+
+    std::cout << "shader init ok" << std::endl;
 }
 
 void Shader::use() { glUseProgram(id_); }

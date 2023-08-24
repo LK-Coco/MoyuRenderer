@@ -12,7 +12,8 @@ public:
     virtual void render() override;
 
 private:
-    GLuint vao_;
     void init();
+
+    GLuint vao_;
 };
 }  // namespace MR

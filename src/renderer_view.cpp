@@ -53,12 +53,12 @@ void RendererView::init(int width, int height) {
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 450");
 
-    renderer_ = std::make_shared<Rasterizer>();
-    model_ = std::make_shared<Cube>();  // "assets/AfricanHead/african_head.obj"
+    model_ = std::make_shared<Model>("assets/AfricanHead/african_head.obj");  //
     shader_ =
         std::make_shared<Shader>("assets/shaders/phone/phone.vs", "assets/shaders/phone/phone.fs");
+    renderer_ = std::make_shared<Rasterizer>();
 
-    std::cout << "init view!" << std::endl;
+    std::cout << "init view ok!" << std::endl;
 }
 
 void RendererView::run() {
@@ -79,8 +79,6 @@ void RendererView::run() {
 
         // 渲染ImGui命令
         ImGui::Render();
-        // glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        // glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window_);
@@ -101,8 +99,7 @@ void RendererView::render_main_side(const GLuint& image) {
                      ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
                          ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
                          ImGuiWindowFlags_MenuBar);
-        ImGui::Image((void*)(intptr_t)image, ImGui::GetContentRegionAvail(), ImVec2(0, 1),
-                     ImVec2(1, 0));
+        ImGui::Image((void*)(intptr_t)image, ImGui::GetContentRegionAvail());
         ImGui::End();
     }
 }
