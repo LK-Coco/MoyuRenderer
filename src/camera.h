@@ -34,13 +34,17 @@ public:
     }
 
     void on_process_mouse_move(float x_offset, float y_offset) {
-        yaw -= x_offset;
-        pitch -= y_offset;
+        yaw += x_offset * 0.5f;
+        pitch += y_offset * 0.5f;
         pitch = glm::clamp(pitch, -88.0f, 89.0f);
+        if (yaw > 360.f) yaw -= 360.f;
+        if (yaw < -360.f) yaw += 360.f;
 
-        position.x = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch)) * zoom_;
+        float n = glm::cos(glm::radians(pitch)) * zoom_;
+
+        position.x = glm::cos(glm::radians(yaw)) * n;
         position.y = glm::sin(glm::radians(pitch)) * zoom_;
-        position.z = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch)) * zoom_;
+        position.z = glm::sin(glm::radians(yaw)) * n;
         position += center;
 
         update();

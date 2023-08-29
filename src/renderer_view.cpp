@@ -5,6 +5,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <glm/glm.hpp>
 #include "glad/glad.h"
 #include "model.h"
 #include "cube.h"
@@ -13,6 +14,11 @@
 namespace MR {
 
 void RendererView::init(int width, int height) {
+    width_ = width;
+    height_ = height;
+    mouse_xpos_ = width_ * 0.5f;
+    mouse_ypos_ = height_ * 0.5f;
+
     // 初始化GLFW
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -35,8 +41,30 @@ void RendererView::init(int width, int height) {
         view->width_ = width;
         view->height_ = height;
     });
-    // glfwSetCursorPosCallback(window_, mouse_call_back);
-    // glfwSetMouseButtonCallback(window_, mouse_button_callback);
+    glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xpos, double ypos) {
+        auto view = static_cast<RendererView*>(glfwGetWindowUserPointer(window));
+        double last_x, last_y;
+        glfwGetCursorPos(window, &last_x, &last_y);
+        float cur_x = view->width_ - static_cast<float>(last_x);
+        float cur_y = view->height_ - static_cast<float>(last_y);
+        if (view->mouse_left_clicked_) {
+            float delta_x = cur_x - view->mouse_xpos_;
+            float delta_y = view->mouse_ypos_ - cur_y;
+            view->camera_.on_process_mouse_move(delta_x, delta_y);
+        }
+        view->mouse_xpos_ = cur_x;
+        view->mouse_ypos_ = cur_y;
+    });
+    glfwSetMouseButtonCallback(window_, [](GLFWwindow* window, int button, int action, int mods) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            auto view = static_cast<RendererView*>(glfwGetWindowUserPointer(window));
+            if (action == GLFW_PRESS) {
+                view->mouse_left_clicked_ = true;
+            } else if (action == GLFW_RELEASE) {
+                view->mouse_left_clicked_ = false;
+            }
+        }
+    });
     glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset) {
         auto view = static_cast<RendererView*>(glfwGetWindowUserPointer(window));
         view->camera_.on_process_mouse_scroll(yoffset);
@@ -66,6 +94,15 @@ void RendererView::init(int width, int height) {
 
 void RendererView::run() {
     while (!glfwWindowShouldClose(window_)) {
+        double current_time = glfwGetTime();
+        double deltaTime = current_time - previous_time_;
+
+        // 如果渲染时间小于目标帧时间，延迟剩余时间
+        if (deltaTime < target_frame_time) {
+            double sleep_time = target_frame_time - deltaTime;
+            glfwWaitEventsTimeout(sleep_time - 0.001);
+        }
+        previous_time_ = current_time;
         glfwPollEvents();
 
         shader_->use();
@@ -137,6 +174,9 @@ void RendererView::render_right_side() {
                 if (ImGui::Combo("Render Mode", &cur_render_mode_, render_mode,
                                  IM_ARRAYSIZE(render_mode))) {
                 }
+                ImGui::DragFloat("Camera Pos X", &camera_.position.x);
+                ImGui::DragFloat("Camera Pos Y", &camera_.position.y);
+                ImGui::DragFloat("Camera Pos Z", &camera_.position.z);
 
                 ImGui::EndTabItem();
             }
