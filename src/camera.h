@@ -34,6 +34,7 @@ public:
     }
 
     void on_process_mouse_move(float x_offset, float y_offset) {
+        // TODO 重构：四元数的旋转
         yaw += x_offset * 0.5f;
         pitch += y_offset * 0.5f;
         pitch = glm::clamp(pitch, -88.0f, 89.0f);
