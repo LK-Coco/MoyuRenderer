@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <cstdint>
 #include "glm/glm.hpp"
 
@@ -18,16 +19,34 @@ using namespace glm;
                 f(mat2) \
                 f(mat3) \
                 f(mat4)
-// clang-format on
+
 
 enum class UniformType : std::uint8_t {
 
 #define _FUNCTION(name) u_##name,
     UNIFORM_FOREACH(_FUNCTION)
 #undef _FUNCTION
+
+    u_sampler_1d,
+    u_sampler_2d,
+    u_sampler_3d,
+    u_sampler_cube,
 };
 
-// clang-format off
+struct Uniform{
+    UniformType type;
+    std::string name;
+    int size;
+    unsigned int location;
+};
+
+struct VertexAttribute{
+    UniformType type;
+    std::string name;
+    int size;
+    unsigned int location;
+};
+
 #define _FUNCTION(name) struct UniformValue_##name { \
                             UniformType type; \
                             name value; \

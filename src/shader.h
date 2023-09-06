@@ -1,7 +1,9 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include "glm/glm.hpp"
+#include "shading_type.h"
 
 namespace MR {
 
@@ -15,21 +17,26 @@ public:
 
     void use();
 
-    void set_bool(const std::string& name, bool val) const;
-    void set_int(const std::string& name, int val) const;
-    void set_float(const std::string& name, float val) const;
-    void set_vec2(const std::string& name, const glm::vec2& val) const;
-    void set_vec2(const std::string& name, float x, float y) const;
-    void set_vec3(const std::string& name, const glm::vec3& val) const;
-    void set_vec3(const std::string& name, float x, float y, float z) const;
-    void set_vec4(const std::string& name, const glm::vec4& val) const;
-    void set_vec4(const std::string& name, float x, float y, float z, float w) const;
-    void set_mat2(const std::string& name, const glm::mat2& val) const;
-    void set_mat3(const std::string& name, const glm::mat3& val) const;
-    void set_mat4(const std::string& name, const glm::mat4& val) const;
+    bool has_uniform(const std::string& name);
+
+    void set_bool(const std::string& name, bool val);
+    void set_int(const std::string& name, int val);
+    void set_float(const std::string& name, float val);
+    void set_vec2(const std::string& name, const glm::vec2& val);
+    void set_vec2(const std::string& name, float x, float y);
+    void set_vec3(const std::string& name, const glm::vec3& val);
+    void set_vec3(const std::string& name, float x, float y, float z);
+    void set_vec4(const std::string& name, const glm::vec4& val);
+    void set_vec4(const std::string& name, float x, float y, float z, float w);
+    void set_mat2(const std::string& name, const glm::mat2& val);
+    void set_mat3(const std::string& name, const glm::mat3& val);
+    void set_mat4(const std::string& name, const glm::mat4& val);
 
 private:
     unsigned int id_;
+
+    std::unordered_map<std::string, Uniform> uniforms_;
+    std::unordered_map<std::string, VertexAttribute> attributes_;
 };
 
 }  // namespace MR
