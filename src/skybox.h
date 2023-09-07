@@ -2,6 +2,8 @@
 
 namespace MR {
 
-class Skybox {};
+class Skybox {
+public:
+};
 
 }  // namespace MR

@@ -1,3 +1,4 @@
+#include <vector>
 #include "texture_loader.h"
 #include "stb_image.h"
 
@@ -42,4 +43,42 @@ Texture TextureLoader::load_texture(const std::string &path, GLenum target, GLen
 
     return texture;
 }
+
+TextureCube TextureLoader::load_texture_cube(std::string top, std::string bottom, std::string left,
+                                             std::string right, std::string front,
+                                             std::string back) {
+    TextureCube texture;
+
+    stbi_set_flip_vertically_on_load(false);
+
+    std::vector<std::string> faces = {top, bottom, left, right, front, back};
+    for (unsigned int i = 0; i < faces.size(); ++i) {
+        int width, height, nr_components;
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nr_components, 0);
+
+        if (data) {
+            GLenum format;
+            if (nr_components == 3)
+                format = GL_RGB;
+            else
+                format = GL_RGBA;
+
+            texture.generate_face(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, width, height, format,
+                                  GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        } else {
+            stbi_image_free(data);
+            return texture;
+        }
+    }
+    if (texture.mipmapping) glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    return texture;
+}
+TextureCube TextureLoader::load_texture_cube(std::string folder) {
+    return TextureLoader::load_texture_cube(folder + "right.jpg", folder + "left.jpg",
+                                            folder + "top.jpg", folder + "bottom.jpg",
+                                            folder + "front.jpg", folder + "back.jpg");
+}
+
 }  // namespace MR
