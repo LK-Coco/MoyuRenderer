@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 #include "glm/glm.hpp"
-#include "texture.h"
+#include "shading/texture.h"
 #include "shader.h"
 
 namespace MR {

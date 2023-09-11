@@ -5,11 +5,15 @@
 #include "renderer.h"
 #include "shader.h"
 #include "camera.h"
+#include "skybox.h"
+
 namespace MR {
 
 class RendererView {
 public:
-    RendererView(int width, int height) : width_(width), height_(height) { init(width, height); }
+    RendererView(int width, int height) : width_(width), height_(height) {
+        init(width, height);
+    }
     void run();
 
 private:
@@ -26,6 +30,8 @@ private:
     float mouse_ypos_ = 0;
 
     int cur_render_mode_ = 0;
+
+    std::shared_ptr<Shader> skybox_shader_;
 
     Camera camera_{glm::vec3(0.f, 0.f, 15.f), glm::vec3(0.f, 0.f, 0.f)};
 

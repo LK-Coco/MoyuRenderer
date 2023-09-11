@@ -35,29 +35,35 @@ void RendererView::init(int width, int height) {
     glfwSetWindowUserPointer(window_, this);
 
     glfwMakeContextCurrent(window_);
-    glfwSetWindowSizeCallback(window_, [](GLFWwindow* window, int width, int height) {
-        glViewport(0, 0, width, height);
-        auto view = static_cast<RendererView*>(glfwGetWindowUserPointer(window));
-        view->width_ = width;
-        view->height_ = height;
-    });
-    glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xpos, double ypos) {
-        auto view = static_cast<RendererView*>(glfwGetWindowUserPointer(window));
-        double last_x, last_y;
-        glfwGetCursorPos(window, &last_x, &last_y);
-        float cur_x = view->width_ - static_cast<float>(last_x);
-        float cur_y = view->height_ - static_cast<float>(last_y);
-        if (view->mouse_left_clicked_) {
-            float delta_x = cur_x - view->mouse_xpos_;
-            float delta_y = view->mouse_ypos_ - cur_y;
-            view->camera_.on_process_mouse_move(delta_x, delta_y);
-        }
-        view->mouse_xpos_ = cur_x;
-        view->mouse_ypos_ = cur_y;
-    });
-    glfwSetMouseButtonCallback(window_, [](GLFWwindow* window, int button, int action, int mods) {
+    glfwSetWindowSizeCallback(
+        window_, [](GLFWwindow* window, int width, int height) {
+            glViewport(0, 0, width, height);
+            auto view =
+                static_cast<RendererView*>(glfwGetWindowUserPointer(window));
+            view->width_ = width;
+            view->height_ = height;
+        });
+    glfwSetCursorPosCallback(
+        window_, [](GLFWwindow* window, double xpos, double ypos) {
+            auto view =
+                static_cast<RendererView*>(glfwGetWindowUserPointer(window));
+            double last_x, last_y;
+            glfwGetCursorPos(window, &last_x, &last_y);
+            float cur_x = view->width_ - static_cast<float>(last_x);
+            float cur_y = view->height_ - static_cast<float>(last_y);
+            if (view->mouse_left_clicked_) {
+                float delta_x = cur_x - view->mouse_xpos_;
+                float delta_y = view->mouse_ypos_ - cur_y;
+                view->camera_.on_process_mouse_move(delta_x, delta_y);
+            }
+            view->mouse_xpos_ = cur_x;
+            view->mouse_ypos_ = cur_y;
+        });
+    glfwSetMouseButtonCallback(window_, [](GLFWwindow* window, int button,
+                                           int action, int mods) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
-            auto view = static_cast<RendererView*>(glfwGetWindowUserPointer(window));
+            auto view =
+                static_cast<RendererView*>(glfwGetWindowUserPointer(window));
             if (action == GLFW_PRESS) {
                 view->mouse_left_clicked_ = true;
             } else if (action == GLFW_RELEASE) {
@@ -65,10 +71,12 @@ void RendererView::init(int width, int height) {
             }
         }
     });
-    glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset) {
-        auto view = static_cast<RendererView*>(glfwGetWindowUserPointer(window));
-        view->camera_.on_process_mouse_scroll(yoffset);
-    });
+    glfwSetScrollCallback(
+        window_, [](GLFWwindow* window, double xoffset, double yoffset) {
+            auto view =
+                static_cast<RendererView*>(glfwGetWindowUserPointer(window));
+            view->camera_.on_process_mouse_scroll(yoffset);
+        });
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         glfwTerminate();
@@ -85,9 +93,12 @@ void RendererView::init(int width, int height) {
     ImGui_ImplOpenGL3_Init("#version 450");
 
     model_ = std::make_shared<Model>("assets/AfricanHead/african_head.obj");
-    shader_ =
-        std::make_shared<Shader>("assets/shaders/phone/phone.vs", "assets/shaders/phone/phone.fs");
+    shader_ = std::make_shared<Shader>("assets/shaders/phone/phone.vs",
+                                       "assets/shaders/phone/phone.fs");
     renderer_ = std::make_shared<Rasterizer>();
+
+    skybox_shader_ = std::make_shared<Shader>(
+        "assets/shaders/skybox/skybox.vs", "assets/shaders/skybox/skybox.fs");
 
     std::cout << "init view ok!" << std::endl;
 }
@@ -105,22 +116,24 @@ void RendererView::run() {
         previous_time_ = current_time;
         glfwPollEvents();
 
-        shader_->use();
-        glm::mat4 projection = glm::perspective(glm::radians(camera_.get_zoom()),
-                                                (float)width_ / (float)height_, 0.1f, 100.0f);
+        glm::mat4 projection =
+            glm::perspective(glm::radians(camera_.get_zoom()),
+                             (float)width_ / (float)height_, 0.1f, 100.0f);
         glm::mat4 view = camera_.get_view_mat();
+        shader_->use();
         shader_->set_mat4("projection", projection);
         shader_->set_mat4("view", view);
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(
-            model,
-            glm::vec3(0.0f, 0.0f, 0.0f));  // translate it down so it's at the center of the scene
-        model = glm::scale(
-            model,
-            glm::vec3(1.0f, 1.0f, 1.0f));  // it's a bit too big for our scene, so scale it down
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         shader_->set_mat4("model", model);
 
         renderer_->render(model_, shader_);
+
+        skybox_shader_->use();
+        skybox_shader_->set_mat4("projection", projection);
+        skybox_shader_->set_mat4("view", view);
+        renderer_->render_skybox();
 
         // 开始ImGui框架新的帧
         ImGui_ImplOpenGL3_NewFrame();
@@ -147,11 +160,13 @@ void RendererView::run() {
 
 void RendererView::render_main_side(const GLuint& image) {
     ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_None);
-    ImGui::SetNextWindowSize(ImVec2(GLfloat(width_ * 0.8f), GLfloat(height_)), ImGuiCond_None);
+    ImGui::SetNextWindowSize(ImVec2(GLfloat(width_ * 0.8f), GLfloat(height_)),
+                             ImGuiCond_None);
     {
         ImGui::Begin("Main", NULL,
-                     ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
-                         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_AlwaysAutoResize |
+                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                         ImGuiWindowFlags_NoTitleBar |
                          ImGuiWindowFlags_MenuBar);
         ImGui::Image((void*)(intptr_t)image, ImGui::GetContentRegionAvail());
         ImGui::End();
@@ -161,11 +176,13 @@ void RendererView::render_main_side(const GLuint& image) {
 void RendererView::render_right_side() {
     int window_width = width_ * 0.2f;
     ImGui::SetNextWindowPos(ImVec2(width_ * 0.8f, 0.0), ImGuiCond_None);
-    ImGui::SetNextWindowSize(ImVec2(GLfloat(window_width), GLfloat(height_)), ImGuiCond_None);
+    ImGui::SetNextWindowSize(ImVec2(GLfloat(window_width), GLfloat(height_)),
+                             ImGuiCond_None);
     {
         ImGui::Begin("Option", NULL,
-                     ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
-                         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_AlwaysAutoResize |
+                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                         ImGuiWindowFlags_NoTitleBar |
                          ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginTabBar("Overview", ImGuiTabBarFlags_None)) {
             if (ImGui::BeginTabItem("Base")) {
@@ -187,13 +204,15 @@ void RendererView::render_right_side() {
 }
 
 void process_input(GLFWwindow* window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
 }
 
 void mouse_call_back(GLFWwindow* window, double xpos, double ypos) {}
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {}
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {}
+void mouse_button_callback(GLFWwindow* window, int button, int action,
+                           int mods) {}
 
 }  // namespace MR

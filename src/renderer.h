@@ -10,7 +10,9 @@ class Renderer {
 public:
     Renderer(){};
 
-    virtual void render(std::shared_ptr<Object>& object, std::shared_ptr<Shader>& shader){};
+    virtual void render(std::shared_ptr<Object>& object,
+                        std::shared_ptr<Shader>& shader){};
+    virtual void render_skybox(){};
     virtual GLuint get_image_id() const { return 0; };
 };
 

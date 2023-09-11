@@ -11,7 +11,7 @@ add_requires("assimp 5.2.5")
 target("MoyuRenderer")
     set_kind("binary")
     add_includedirs("src")
-    add_files("src/*.cpp")
+    add_files("src/**.cpp")
     add_packages("glm","spdlog","imgui","glfw","glad","assimp")
     set_rundir("./")
 

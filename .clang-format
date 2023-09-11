@@ -8,7 +8,7 @@ AllowShortFunctionsOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 AllowAllConstructorInitializersOnNextLine: false
 AlwaysBreakBeforeMultilineStrings: false
-ColumnLimit: 100
+ColumnLimit: 80
 PointerAlignment: Right
 SortIncludes: false
 SortUsingDeclarations: false
