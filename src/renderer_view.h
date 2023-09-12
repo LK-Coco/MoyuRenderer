@@ -11,9 +11,7 @@ namespace MR {
 
 class RendererView {
 public:
-    RendererView(int width, int height) : width_(width), height_(height) {
-        init(width, height);
-    }
+    RendererView(int width, int height);
     void run();
 
 private:
@@ -22,8 +20,6 @@ private:
     void render_right_side();
 
     GLFWwindow* window_;
-    int width_;
-    int height_;
 
     bool mouse_left_clicked_ = false;
     float mouse_xpos_ = 0;
@@ -33,9 +29,9 @@ private:
 
     std::shared_ptr<Shader> skybox_shader_;
 
-    Camera camera_{glm::vec3(0.f, 0.f, 15.f), glm::vec3(0.f, 0.f, 0.f)};
+    // Camera camera_{glm::vec3(0.f, 0.f, 15.f), glm::vec3(0.f, 0.f, 0.f)};
 
-    std::shared_ptr<Object> model_;
+    // std::shared_ptr<Object> model_;
     std::shared_ptr<Shader> shader_;
     std::shared_ptr<Renderer> renderer_;
 

@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "renderer_view.h"
-
+#include "scene.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -13,11 +13,13 @@
 
 namespace MR {
 
+RendererView::RendererView(int width, int height) { init(width, height); }
+
 void RendererView::init(int width, int height) {
-    width_ = width;
-    height_ = height;
-    mouse_xpos_ = width_ * 0.5f;
-    mouse_ypos_ = height_ * 0.5f;
+    Scene::width = width;
+    Scene::height = height;
+    mouse_xpos_ = width * 0.5f;
+    mouse_ypos_ = height * 0.5f;
 
     // 初始化GLFW
     glfwInit();
@@ -35,26 +37,24 @@ void RendererView::init(int width, int height) {
     glfwSetWindowUserPointer(window_, this);
 
     glfwMakeContextCurrent(window_);
-    glfwSetWindowSizeCallback(
-        window_, [](GLFWwindow* window, int width, int height) {
-            glViewport(0, 0, width, height);
-            auto view =
-                static_cast<RendererView*>(glfwGetWindowUserPointer(window));
-            view->width_ = width;
-            view->height_ = height;
-        });
+    glfwSetWindowSizeCallback(window_,
+                              [](GLFWwindow* window, int width, int height) {
+                                  glViewport(0, 0, width, height);
+                                  Scene::width = width;
+                                  Scene::height = height;
+                              });
     glfwSetCursorPosCallback(
         window_, [](GLFWwindow* window, double xpos, double ypos) {
             auto view =
                 static_cast<RendererView*>(glfwGetWindowUserPointer(window));
             double last_x, last_y;
             glfwGetCursorPos(window, &last_x, &last_y);
-            float cur_x = view->width_ - static_cast<float>(last_x);
-            float cur_y = view->height_ - static_cast<float>(last_y);
+            float cur_x = Scene::width - static_cast<float>(last_x);
+            float cur_y = Scene::height - static_cast<float>(last_y);
             if (view->mouse_left_clicked_) {
                 float delta_x = cur_x - view->mouse_xpos_;
                 float delta_y = view->mouse_ypos_ - cur_y;
-                view->camera_.on_process_mouse_move(delta_x, delta_y);
+                Scene::camera->on_process_mouse_move(delta_x, delta_y);
             }
             view->mouse_xpos_ = cur_x;
             view->mouse_ypos_ = cur_y;
@@ -75,7 +75,7 @@ void RendererView::init(int width, int height) {
         window_, [](GLFWwindow* window, double xoffset, double yoffset) {
             auto view =
                 static_cast<RendererView*>(glfwGetWindowUserPointer(window));
-            view->camera_.on_process_mouse_scroll(yoffset);
+            Scene::camera->on_process_mouse_scroll(yoffset);
         });
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -92,7 +92,8 @@ void RendererView::init(int width, int height) {
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 450");
 
-    model_ = std::make_shared<Model>("assets/AfricanHead/african_head.obj");
+    Scene::model =
+        std::make_shared<Model>("assets/AfricanHead/african_head.obj");
     shader_ = std::make_shared<Shader>("assets/shaders/phone/phone.vs",
                                        "assets/shaders/phone/phone.fs");
     renderer_ = std::make_shared<Rasterizer>();
@@ -116,10 +117,10 @@ void RendererView::run() {
         previous_time_ = current_time;
         glfwPollEvents();
 
-        glm::mat4 projection =
-            glm::perspective(glm::radians(camera_.get_zoom()),
-                             (float)width_ / (float)height_, 0.1f, 100.0f);
-        glm::mat4 view = camera_.get_view_mat();
+        glm::mat4 projection = glm::perspective(
+            glm::radians(Scene::camera->get_zoom()),
+            (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
+        glm::mat4 view = Scene::camera->get_view_mat();
         shader_->use();
         shader_->set_mat4("projection", projection);
         shader_->set_mat4("view", view);
@@ -128,7 +129,7 @@ void RendererView::run() {
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         shader_->set_mat4("model", model);
 
-        renderer_->render(model_, shader_);
+        renderer_->render(Scene::model, shader_);
 
         skybox_shader_->use();
         skybox_shader_->set_mat4("projection", projection);
@@ -160,8 +161,9 @@ void RendererView::run() {
 
 void RendererView::render_main_side(const GLuint& image) {
     ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_None);
-    ImGui::SetNextWindowSize(ImVec2(GLfloat(width_ * 0.8f), GLfloat(height_)),
-                             ImGuiCond_None);
+    ImGui::SetNextWindowSize(
+        ImVec2(GLfloat(Scene::width * 0.8f), GLfloat(Scene::height)),
+        ImGuiCond_None);
     {
         ImGui::Begin("Main", NULL,
                      ImGuiWindowFlags_AlwaysAutoResize |
@@ -174,10 +176,10 @@ void RendererView::render_main_side(const GLuint& image) {
 }
 
 void RendererView::render_right_side() {
-    int window_width = width_ * 0.2f;
-    ImGui::SetNextWindowPos(ImVec2(width_ * 0.8f, 0.0), ImGuiCond_None);
-    ImGui::SetNextWindowSize(ImVec2(GLfloat(window_width), GLfloat(height_)),
-                             ImGuiCond_None);
+    int window_width = Scene::width * 0.2f;
+    ImGui::SetNextWindowPos(ImVec2(Scene::width * 0.8f, 0.0), ImGuiCond_None);
+    ImGui::SetNextWindowSize(
+        ImVec2(GLfloat(window_width), GLfloat(Scene::height)), ImGuiCond_None);
     {
         ImGui::Begin("Option", NULL,
                      ImGuiWindowFlags_AlwaysAutoResize |
@@ -191,9 +193,9 @@ void RendererView::render_right_side() {
                 if (ImGui::Combo("Render Mode", &cur_render_mode_, render_mode,
                                  IM_ARRAYSIZE(render_mode))) {
                 }
-                ImGui::DragFloat("Camera Pos X", &camera_.position.x);
-                ImGui::DragFloat("Camera Pos Y", &camera_.position.y);
-                ImGui::DragFloat("Camera Pos Z", &camera_.position.z);
+                ImGui::DragFloat("Camera Pos X", &Scene::camera->position.x);
+                ImGui::DragFloat("Camera Pos Y", &Scene::camera->position.y);
+                ImGui::DragFloat("Camera Pos Z", &Scene::camera->position.z);
 
                 ImGui::EndTabItem();
             }

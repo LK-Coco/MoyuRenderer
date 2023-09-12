@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "skybox.h"
 #include "glad/glad.h"
 #include "resources/resources.h"
@@ -35,7 +37,11 @@ void Skybox::init(std::string& path) {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
                           (void*)0);
 
-    TextureCube* cube_map_ = Resources::load_texture_cube("skybox map", path);
+    cube_map_ = Resources::load_texture_cube("skybox map", path);
+
+    if (cube_map_->face_width != 0) {
+        std::cout << "skybox init ok" << std::endl;
+    }
 
     // glGenTextures(1, &skybox_map_id_);
     // glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_map_id_);
