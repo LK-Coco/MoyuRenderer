@@ -34,7 +34,7 @@ Rasterizer::Rasterizer() : fbo_(0), texture_id_(0) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     skybox_ = Skybox();
-    std::string skybox_map_path = "assets/Skybox/Hotel.jpg";
+    std::string skybox_map_path = "assets/Skybox/Lake/";
     skybox_.init(skybox_map_path);
 }
 
@@ -52,6 +52,9 @@ void Rasterizer::render(std::shared_ptr<Object>& object,
 
 void Rasterizer::render_skybox() {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+    glViewport(0, 0, 1280, 720);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     skybox_.draw();
 

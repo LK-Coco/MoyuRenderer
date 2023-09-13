@@ -9,28 +9,29 @@ constexpr glm::vec3 WORLD_UP = glm::vec3(0, 1, 0);
 
 class Camera {
 public:
-    Camera(glm::vec3 pos, glm::vec3 center, float yaw = 90.0f, float pitch = 0.0f)
+    Camera(glm::vec3 pos, float yaw = -90.0f, float pitch = 0.0f)
         : position(pos),
-          center(center),
+          front_(glm::vec3(0.0f, 0.0f, -1.0f)),
           yaw(yaw),
           pitch(pitch) {
-        zoom_ = glm::length(position - center);
         update();
     }
 
-    glm::mat4 get_view_mat() const { return glm::lookAt(position, center, up_); }
+    glm::mat4 get_view_mat() const {
+        return glm::lookAt(position, position + front_, up_);
+    }
 
     float get_zoom() const { return zoom_; }
 
     void set_zoom(float zoom) {
         zoom_ = zoom;
-        position = center - front_ * zoom;
+        // position = center - front_ * zoom;
     }
 
     void on_process_mouse_scroll(float scroll) {
-        zoom_ -= scroll;
-        zoom_ = glm::clamp(zoom_, 1.0f, 100.0f);
-        set_zoom(zoom_);
+        zoom_ -= (float)scroll;
+        if (zoom_ < 1.0f) zoom_ = 1.0f;
+        if (zoom_ > 99.0f) zoom_ = 45.0f;
     }
 
     void on_process_mouse_move(float x_offset, float y_offset) {
@@ -41,24 +42,26 @@ public:
         if (yaw > 360.f) yaw -= 360.f;
         if (yaw < -360.f) yaw += 360.f;
 
-        float n = glm::cos(glm::radians(pitch)) * zoom_;
+        // float n = glm::cos(glm::radians(pitch)) * zoom_;
 
-        position.x = glm::cos(glm::radians(yaw)) * n;
-        position.y = glm::sin(glm::radians(pitch)) * zoom_;
-        position.z = glm::sin(glm::radians(yaw)) * n;
-        position += center;
+        // position.x = glm::cos(glm::radians(yaw)) * n;
+        // position.y = glm::sin(glm::radians(pitch)) * zoom_;
+        // position.z = glm::sin(glm::radians(yaw)) * n;
 
         update();
     }
 
     glm::vec3 position;
-    glm::vec3 center;
     float yaw;
     float pitch;
 
 private:
     void update() {
-        front_ = glm::normalize(center - position);
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front_ = glm::normalize(front);
         right_ = glm::normalize(glm::cross(front_, WORLD_UP));
         up_ = glm::normalize(glm::cross(right_, front_));
     }
@@ -66,7 +69,7 @@ private:
     glm::vec3 front_;
     glm::vec3 right_;
     glm::vec3 up_;
-    float zoom_;
+    float zoom_ = 45;
 };
 
 }  // namespace MR

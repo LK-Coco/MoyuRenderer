@@ -115,7 +115,6 @@ void RendererView::run() {
             glfwWaitEventsTimeout(sleep_time - 0.001);
         }
         previous_time_ = current_time;
-        glfwPollEvents();
 
         glm::mat4 projection = glm::perspective(
             glm::radians(Scene::camera->get_zoom()),
@@ -129,7 +128,7 @@ void RendererView::run() {
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         shader_->set_mat4("model", model);
 
-        renderer_->render(Scene::model, shader_);
+        // renderer_->render(Scene::model, shader_);
 
         skybox_shader_->use();
         skybox_shader_->set_mat4("projection", projection);
@@ -149,6 +148,7 @@ void RendererView::run() {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+        glfwPollEvents();
         glfwSwapBuffers(window_);
     }
 

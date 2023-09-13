@@ -12,11 +12,11 @@ public:
     GLenum internal_format = GL_RGBA;
     GLenum format = GL_RGBA;
     GLenum type = GL_UNSIGNED_BYTE;
-    GLenum filter_min = GL_LINEAR_MIPMAP_LINEAR;
+    GLenum filter_min = GL_LINEAR;
     GLenum filter_max = GL_LINEAR;
-    GLenum wrap_s = GL_REPEAT;
-    GLenum wrap_t = GL_REPEAT;
-    GLenum wrap_r = GL_REPEAT;
+    GLenum wrap_s = GL_CLAMP_TO_EDGE;
+    GLenum wrap_t = GL_CLAMP_TO_EDGE;
+    GLenum wrap_r = GL_CLAMP_TO_EDGE;
     bool mipmapping = true;
 
     unsigned int face_width = 0;
@@ -25,14 +25,12 @@ public:
     TextureCube();
     ~TextureCube();
 
-    void default_initialize(unsigned int width, unsigned int height, GLenum format, GLenum type,
-                            bool mipmap = false);
+    void generate_face(GLenum face, unsigned int width, unsigned int height,
+                       GLenum format, GLenum type, unsigned char* data);
 
-    void generate_face(GLenum face, unsigned int width, unsigned int height, GLenum format,
-                       GLenum type, unsigned char* data);
-
-    void set_mip_face(GLenum face, unsigned int width, unsigned int height, GLenum format,
-                      GLenum type, unsigned int mip_level, unsigned char* data);
+    void set_mip_face(GLenum face, unsigned int width, unsigned int height,
+                      GLenum format, GLenum type, unsigned int mip_level,
+                      unsigned char* data);
 
     void resize(unsigned int width, unsigned int height);
 
