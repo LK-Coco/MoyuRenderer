@@ -1,5 +1,6 @@
 #include <iostream>
 #include "rasterizer.h"
+#include "scene.h"
 
 namespace MR {
 
@@ -9,8 +10,8 @@ Rasterizer::Rasterizer() : fbo_(0), texture_id_(0) {
 
     glGenTextures(1, &texture_id_);
     glBindTexture(GL_TEXTURE_2D, texture_id_);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1280, 720, 0, GL_RGB,
-                 GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Scene::width, Scene::height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // 将它附加到当前绑定的帧缓冲对象
@@ -20,9 +21,10 @@ Rasterizer::Rasterizer() : fbo_(0), texture_id_(0) {
     unsigned int rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1280,
-                          720);  // use a single renderbuffer object for both a
-                                 // depth AND stencil buffer.
+    glRenderbufferStorage(
+        GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Scene::width,
+        Scene::height);  // use a single renderbuffer object for both a
+                         // depth AND stencil buffer.
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
                               GL_RENDERBUFFER,
                               rbo);  // now actually attach it
@@ -41,7 +43,7 @@ Rasterizer::Rasterizer() : fbo_(0), texture_id_(0) {
 void Rasterizer::render(std::shared_ptr<Object>& object,
                         std::shared_ptr<Shader>& shader) {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
-    glViewport(0, 0, 1280, 720);
+    glViewport(0, 0, Scene::width, Scene::height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0f, 0.0f, 0.9f, 1.0f);
 
@@ -52,7 +54,7 @@ void Rasterizer::render(std::shared_ptr<Object>& object,
 
 void Rasterizer::render_skybox() {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
-    glViewport(0, 0, 1280, 720);
+    glViewport(0, 0, Scene::width, Scene::height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 

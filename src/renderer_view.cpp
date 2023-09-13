@@ -170,7 +170,9 @@ void RendererView::render_main_side(const GLuint& image) {
                          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
                          ImGuiWindowFlags_NoTitleBar |
                          ImGuiWindowFlags_MenuBar);
-        ImGui::Image((void*)(intptr_t)image, ImGui::GetContentRegionAvail());
+        ImGui::Image((void*)(intptr_t)image, ImGui::GetContentRegionAvail(),
+                     ImVec2(0, 1),
+                     ImVec2(1, 0));  // 设置imgui原点为左下角，与opengl保持一致
         ImGui::End();
     }
 }

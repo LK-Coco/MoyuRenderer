@@ -31,7 +31,7 @@ public:
     void on_process_mouse_scroll(float scroll) {
         zoom_ -= (float)scroll;
         if (zoom_ < 1.0f) zoom_ = 1.0f;
-        if (zoom_ > 99.0f) zoom_ = 45.0f;
+        if (zoom_ > 99.0f) zoom_ = 99.0f;
     }
 
     void on_process_mouse_move(float x_offset, float y_offset) {
