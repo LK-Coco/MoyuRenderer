@@ -10,7 +10,8 @@ namespace MR {
 class Shader {
 public:
     Shader() : id_(-1){};
-    Shader(const char* vertex_path, const char* fragment_path, const char* geometry_path = nullptr);
+    Shader(const char* vertex_path, const char* fragment_path,
+           const char* geometry_path = nullptr);
     virtual ~Shader() {}
 
     unsigned int get_id() const { return id_; }
@@ -18,6 +19,9 @@ public:
     void use();
 
     bool has_uniform(const std::string& name);
+    inline const std::unordered_map<std::string, Uniform>& get_unifrom() const {
+        return uniforms_;
+    }
 
     void set_bool(const std::string& name, bool val);
     void set_int(const std::string& name, int val);

@@ -54,9 +54,9 @@ void Rasterizer::render(std::shared_ptr<Object>& object,
 
 void Rasterizer::render_skybox() {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
-    glViewport(0, 0, Scene::width, Scene::height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    // glViewport(0, 0, Scene::width, Scene::height);
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     skybox_.draw();
 

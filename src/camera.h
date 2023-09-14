@@ -6,6 +6,9 @@
 namespace MR {
 
 constexpr glm::vec3 WORLD_UP = glm::vec3(0, 1, 0);
+constexpr float MovementSpeed = 20.0f;
+
+enum class CameraMovement { FORWARD, BACKWARD, LEFT, RIGHT };
 
 class Camera {
 public:
@@ -23,11 +26,6 @@ public:
     }
 
     float get_zoom() const { return zoom_; }
-
-    void set_zoom(float zoom) {
-        zoom_ = zoom;
-        // position = center - front_ * zoom;
-    }
 
     void on_process_mouse_scroll(float scroll) {
         zoom_ -= (float)scroll;
@@ -50,6 +48,15 @@ public:
         // position.z = glm::sin(glm::radians(yaw)) * n;
 
         update();
+    }
+
+    void on_process_keyboard(CameraMovement direction, float delta_time) {
+        float velocity = MovementSpeed * delta_time;
+        if (direction == CameraMovement::FORWARD) position += front_ * velocity;
+        if (direction == CameraMovement::BACKWARD)
+            position -= front_ * velocity;
+        if (direction == CameraMovement::LEFT) position -= right_ * velocity;
+        if (direction == CameraMovement::RIGHT) position += right_ * velocity;
     }
 
     glm::vec3 position;

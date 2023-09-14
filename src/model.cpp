@@ -92,8 +92,11 @@ void Model::load_material_textures(aiMaterial* mat, aiTextureType type,
     for (unsigned int i = 0; i < mat->GetTextureCount(type); ++i) {
         aiString str;
         mat->GetTexture(type, i, &str);
-
-        Resources::load_texture(type_name + std::to_string(i), str.C_Str());
+        std::string tex_name = type_name + std::to_string(i);
+        std::string file_path = directory_ + '/' + std::string(str.C_Str());
+        std::cout << "load texture:" << file_path << "    name:" << tex_name
+                  << std::endl;
+        Resources::load_texture(tex_name, file_path);
 
         // bool skip = false;
         // for (unsigned int j = 0; j < textures_loaded_.size(); j++) {

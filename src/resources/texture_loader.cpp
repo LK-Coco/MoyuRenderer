@@ -17,7 +17,7 @@ Texture TextureLoader::load_texture(const std::string &path, GLenum target,
         texture.internal_format = srgb ? GL_SRGB_ALPHA : GL_RGBA;
 
     // flip textures on their y coordinate while loading
-    stbi_set_flip_vertically_on_load(true);
+    // stbi_set_flip_vertically_on_load(true);
 
     int width, height, nr_components;
     unsigned char *data =

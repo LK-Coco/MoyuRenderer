@@ -1,7 +1,7 @@
+#include <iostream>
 #include "mesh.h"
 #include "glad/glad.h"
-
-#include <iostream>
+#include "resources/resources.h"
 
 namespace MR {
 
@@ -21,11 +21,13 @@ void Mesh::init() {
 
     glBindVertexArray(vao_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(Vertex), &vertices_[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(Vertex),
+                 &vertices_[0], GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, GLsizei(indices_.size()) * sizeof(unsigned int),
-                 &indices_[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 GLsizei(indices_.size()) * sizeof(unsigned int), &indices_[0],
+                 GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
@@ -42,39 +44,19 @@ void Mesh::init() {
     glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *)offsetof(Vertex, bitangent));
     // glEnableVertexAttribArray(5);
-    // glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void *)offsetof(Vertex, m_BoneIDs));
-    // glEnableVertexAttribArray(6);
+    // glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void
+    // *)offsetof(Vertex, m_BoneIDs)); glEnableVertexAttribArray(6);
     // glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
     //                       (void *)offsetof(Vertex, m_Weights));
     glBindVertexArray(0);
 }
 
 void Mesh::draw(std::shared_ptr<Shader> &shader) {
-    // bind appropriate textures
-    unsigned int diffuseNr = 1;
-    unsigned int specularNr = 1;
-    unsigned int normalNr = 1;
-    unsigned int heightNr = 1;
-    for (unsigned int i = 0; i < textures_.size(); i++) {
-        // TODO 重构texture的绑定
-        // glActiveTexture(GL_TEXTURE0 + i);  // active proper texture unit before binding
-        // // retrieve texture number (the N in diffuse_textureN)
-        // std::string number;
-        // std::string name = textures_[i].type;
-        // if (name == "texture_diffuse")
-        //     number = std::to_string(diffuseNr++);
-        // else if (name == "texture_specular")
-        //     number = std::to_string(specularNr++);  // transfer unsigned int to string
-        // else if (name == "texture_normal")
-        //     number = std::to_string(normalNr++);  // transfer unsigned int to string
-        // else if (name == "texture_height")
-        //     number = std::to_string(heightNr++);  // transfer unsigned int to string
-
-        // // now set the sampler to the correct texture unit
-        // glUniform1i(glGetUniformLocation(shader->get_id(), (name + number).c_str()), i);
-        // // and finally bind the texture
-        // glBindTexture(GL_TEXTURE_2D, textures_[i].id);
-    }
+    std::string name = "texture_diffuse0";
+    auto tex = Resources::get_texture(name);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex->id);
+    glUniform1i(glGetUniformLocation(shader->get_id(), name.c_str()), 0);
 
     glBindVertexArray(vao_);
     glDrawElements(GL_TRIANGLES, GLsizei(indices_.size()), GL_UNSIGNED_INT, 0);

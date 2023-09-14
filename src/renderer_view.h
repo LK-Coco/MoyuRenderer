@@ -35,8 +35,8 @@ private:
     std::shared_ptr<Shader> shader_;
     std::shared_ptr<Renderer> renderer_;
 
-    const int target_frame_rate = 60;
-    const double target_frame_time = 1.0 / target_frame_rate;
+    const int target_frame_rate_ = 60;
+    const double target_frame_time_ = 1.0 / target_frame_rate_;
     double previous_time_ = 0;
 };
 

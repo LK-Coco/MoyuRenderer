@@ -13,6 +13,8 @@
 
 namespace MR {
 
+void process_input(GLFWwindow* window, double delta_time);
+
 RendererView::RendererView(int width, int height) { init(width, height); }
 
 void RendererView::init(int width, int height) {
@@ -82,6 +84,8 @@ void RendererView::init(int width, int height) {
         glfwTerminate();
         return;
     }
+    // glfwSetKeyCallback(window_, )
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
     glDepthFunc(GL_LEQUAL);
@@ -109,12 +113,14 @@ void RendererView::run() {
         double current_time = glfwGetTime();
         double deltaTime = current_time - previous_time_;
 
-        // 如果渲染时间小于目标帧时间，延迟剩余时间
-        if (deltaTime < target_frame_time) {
-            double sleep_time = target_frame_time - deltaTime;
+        // 如果渲染时间小于目标帧时间，延迟剩余时间target_frame_time_
+        if (deltaTime < target_frame_time_) {
+            double sleep_time = target_frame_time_ - deltaTime;
             glfwWaitEventsTimeout(sleep_time - 0.001);
         }
         previous_time_ = current_time;
+
+        process_input(window_, target_frame_time_);
 
         glm::mat4 projection = glm::perspective(
             glm::radians(60.f), (float)Scene::width / (float)Scene::height,
@@ -128,7 +134,7 @@ void RendererView::run() {
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         shader_->set_mat4("model", model);
 
-        // renderer_->render(Scene::model, shader_);
+        renderer_->render(Scene::model, shader_);
 
         view = glm::mat4(glm::mat3(view));  // 移除translation参数
         skybox_shader_->use();
@@ -208,16 +214,18 @@ void RendererView::render_right_side() {
     }
 }
 
-void process_input(GLFWwindow* window) {
+void process_input(GLFWwindow* window, double delta_time) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        Scene::camera->on_process_keyboard(CameraMovement::FORWARD, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        Scene::camera->on_process_keyboard(CameraMovement::BACKWARD,
+                                           delta_time);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        Scene::camera->on_process_keyboard(CameraMovement::LEFT, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        Scene::camera->on_process_keyboard(CameraMovement::RIGHT, delta_time);
 }
-
-void mouse_call_back(GLFWwindow* window, double xpos, double ypos) {}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {}
-
-void mouse_button_callback(GLFWwindow* window, int button, int action,
-                           int mods) {}
 
 }  // namespace MR
