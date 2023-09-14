@@ -61,12 +61,15 @@ void Skybox::init(std::string& path) {
 
 void Skybox::draw() {
     glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_FALSE);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cube_map_->id);
 
     glBindVertexArray(skybox_vao_);
-    glActiveTexture(GL_TEXTURE0);
-    cube_map_->bind();
     glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
+
+    glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
 }
 

@@ -17,7 +17,8 @@ public:
         update();
     }
 
-    glm::mat4 get_view_mat() const {
+    glm::mat4 get_view_mat() {
+        update();
         return glm::lookAt(position, position + front_, up_);
     }
 

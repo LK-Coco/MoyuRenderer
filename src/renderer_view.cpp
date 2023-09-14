@@ -117,8 +117,8 @@ void RendererView::run() {
         previous_time_ = current_time;
 
         glm::mat4 projection = glm::perspective(
-            glm::radians(Scene::camera->get_zoom()),
-            (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
+            glm::radians(60.f), (float)Scene::width / (float)Scene::height,
+            0.1f, 100.0f);
         glm::mat4 view = Scene::camera->get_view_mat();
         shader_->use();
         shader_->set_mat4("projection", projection);
@@ -130,6 +130,7 @@ void RendererView::run() {
 
         // renderer_->render(Scene::model, shader_);
 
+        view = glm::mat4(glm::mat3(view));  // 移除translation参数
         skybox_shader_->use();
         skybox_shader_->set_mat4("projection", projection);
         skybox_shader_->set_mat4("view", view);
