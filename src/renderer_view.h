@@ -16,6 +16,7 @@ public:
 
 private:
     void init(int width, int height);
+    void load_model(std::string& file_path);
     void render_main_side(const GLuint& image);
     void render_right_side();
 

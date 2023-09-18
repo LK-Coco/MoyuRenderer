@@ -1,4 +1,5 @@
 #include <iostream>
+#include <Windows.h>
 
 #include "renderer_view.h"
 #include "scene.h"
@@ -14,6 +15,8 @@
 namespace MR {
 
 void process_input(GLFWwindow* window, double delta_time);
+
+bool get_file_path(std::string* file_path);
 
 RendererView::RendererView(int width, int height) { init(width, height); }
 
@@ -166,6 +169,8 @@ void RendererView::run() {
     glfwTerminate();
 }
 
+void RendererView::load_model(std::string& file_path) {}
+
 void RendererView::render_main_side(const GLuint& image) {
     ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_None);
     ImGui::SetNextWindowSize(
@@ -201,6 +206,13 @@ void RendererView::render_right_side() {
                 ImGui::SetNextItemWidth(window_width * 0.5f);
                 if (ImGui::Combo("Render Mode", &cur_render_mode_, render_mode,
                                  IM_ARRAYSIZE(render_mode))) {
+                    // TODO 接入切换渲染模式
+                }
+                if (ImGui::Button("Select a model")) {
+                    std::string file_path;
+                    if (get_file_path(&file_path)) {
+                        Scene::model = std::make_shared<Model>(file_path);
+                    }
                 }
                 ImGui::DragFloat("Camera Pos X", &Scene::camera->position.x);
                 ImGui::DragFloat("Camera Pos Y", &Scene::camera->position.y);
@@ -226,6 +238,24 @@ void process_input(GLFWwindow* window, double delta_time) {
         Scene::camera->on_process_keyboard(CameraMovement::LEFT, delta_time);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         Scene::camera->on_process_keyboard(CameraMovement::RIGHT, delta_time);
+}
+
+bool get_file_path(std::string* file_path) {
+    TCHAR szBuffer[MAX_PATH] = {0};
+    OPENFILENAME ofn = {0};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = nullptr;
+    ofn.lpstrFilter = "model files\0*.obj\0";  // 要选择的文件后缀
+    ofn.lpstrFile = szBuffer;                  // 存放文件的缓冲区
+    ofn.nMaxFile = sizeof(szBuffer) / sizeof(*szBuffer);
+    ofn.nFilterIndex = 0;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST |
+                OFN_EXPLORER;  // 标志如果是多选要加上OFN_ALLOWMULTISELECT
+    BOOL bSel = GetOpenFileName(&ofn);
+
+    *file_path = szBuffer;
+
+    return bSel;
 }
 
 }  // namespace MR

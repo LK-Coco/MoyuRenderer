@@ -12,6 +12,9 @@ target("MoyuRenderer")
     set_kind("binary")
     add_includedirs("src")
     add_files("src/**.cpp")
+    if is_plat("windows") then
+        add_links("Comdlg32")
+    end
     add_packages("glm","spdlog","imgui","glfw","glad","assimp")
     set_rundir("./")
 
