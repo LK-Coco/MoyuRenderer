@@ -1,6 +1,7 @@
 #include <iostream>
 #include <Windows.h>
 
+#include "glm/fwd.hpp"
 #include "renderer_view.h"
 #include "scene.h"
 #include "imgui.h"
@@ -101,12 +102,16 @@ void RendererView::init(int width, int height) {
 
     Scene::model =
         std::make_shared<Model>("assets/AfricanHead/african_head.obj");
-    shader_ = std::make_shared<Shader>("assets/shaders/phone/phone.vs",
-                                       "assets/shaders/phone/phone.fs");
+    shader_ =
+        std::make_shared<Shader>("assets/shaders/blinn_phong/blinn_phong.vs",
+                                 "assets/shaders/blinn_phong/blinn_phong.fs");
     renderer_ = std::make_shared<Rasterizer>();
 
     skybox_shader_ = std::make_shared<Shader>(
         "assets/shaders/skybox/skybox.vs", "assets/shaders/skybox/skybox.fs");
+
+    Scene::point_light = std::make_shared<PointLight>(
+        glm::vec4(0.9f, 0.8f, 0.8f, 1), glm::vec3(1, 1, 3));
 
     std::cout << "init view ok!" << std::endl;
 }
@@ -135,7 +140,10 @@ void RendererView::run() {
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        shader_->set_mat4("model", model);
+        // shader_->set_mat4("model", model);
+        shader_->set_vec3("light_pos", Scene::point_light->position);
+        shader_->set_vec3("view_pos", Scene::camera->position);
+        shader_->set_vec4("light_color", Scene::point_light->color);
 
         renderer_->render(Scene::model, shader_);
 
@@ -212,8 +220,10 @@ void RendererView::render_right_side() {
                     std::string file_path;
                     if (get_file_path(&file_path)) {
                         Scene::model = std::make_shared<Model>(file_path);
+                        Scene::cur_model_path = file_path;
                     }
                 }
+                ImGui::Text("Current Model: %s", Scene::cur_model_path.c_str());
                 ImGui::DragFloat("Camera Pos X", &Scene::camera->position.x);
                 ImGui::DragFloat("Camera Pos Y", &Scene::camera->position.y);
                 ImGui::DragFloat("Camera Pos Z", &Scene::camera->position.z);

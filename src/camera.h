@@ -6,7 +6,7 @@
 namespace MR {
 
 constexpr glm::vec3 WORLD_UP = glm::vec3(0, 1, 0);
-constexpr float MovementSpeed = 20.0f;
+constexpr float MovementSpeed = 5.0f;
 
 enum class CameraMovement { FORWARD, BACKWARD, LEFT, RIGHT };
 
