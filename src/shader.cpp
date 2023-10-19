@@ -6,6 +6,24 @@
 
 namespace MR {
 
+UniformType gl_uniform_type_to_uniform_type(GLenum gltype) {
+    switch (gltype) {
+        case GL_FLOAT: return UniformType::u_float;
+        case GL_INT: return UniformType::u_int;
+        case GL_BOOL: return UniformType::u_bool;
+        case GL_FLOAT_VEC2: return UniformType::u_vec2;
+        case GL_FLOAT_VEC3: return UniformType::u_vec3;
+        case GL_FLOAT_MAT2: return UniformType::u_mat2;
+        case GL_FLOAT_MAT3: return UniformType::u_mat3;
+        case GL_FLOAT_MAT4: return UniformType::u_mat4;
+        case GL_SAMPLER_1D: return UniformType::u_sampler_1d;
+        case GL_SAMPLER_2D: return UniformType::u_sampler_2d;
+        case GL_SAMPLER_3D: return UniformType::u_sampler_3d;
+        case GL_SAMPLER_CUBE: return UniformType::u_sampler_cube;
+        default: return UniformType::u_bool;
+    }
+}
+
 bool check_compile_error(GLuint shader, const std::string& type) {
     GLint success;
     GLchar infoLog[1024];
@@ -13,17 +31,23 @@ bool check_compile_error(GLuint shader, const std::string& type) {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
         if (!success) {
             glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-            std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n"
-                      << infoLog << "\n -- --------------------------------------------------- -- "
-                      << std::endl;
+            std::cout
+                << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n"
+                << infoLog
+                << "\n -- --------------------------------------------------- "
+                   "-- "
+                << std::endl;
         }
     } else {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (!success) {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-            std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n"
-                      << infoLog << "\n -- --------------------------------------------------- -- "
-                      << std::endl;
+            std::cout
+                << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n"
+                << infoLog
+                << "\n -- --------------------------------------------------- "
+                   "-- "
+                << std::endl;
         }
     }
     return success;
@@ -39,7 +63,8 @@ void read_shader_file(const char* path, std::string& code) {
     code = stream.str();
 }
 
-Shader::Shader(const char* vertex_path, const char* fragment_path, const char* geometry_path) {
+Shader::Shader(const char* vertex_path, const char* fragment_path,
+               const char* geometry_path) {
     std::string vertex_code;
     std::string fragment_code;
     std::string geometry_code;
@@ -50,7 +75,8 @@ Shader::Shader(const char* vertex_path, const char* fragment_path, const char* g
             read_shader_file(fragment_path, geometry_code);
         }
     } catch (std::ifstream::failure& e) {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what()
+                  << std::endl;
         std::cout << vertex_path << std::endl;
     }
     const char* v_shader_code = vertex_code.c_str();
@@ -88,23 +114,23 @@ Shader::Shader(const char* vertex_path, const char* fragment_path, const char* g
 
     char buffer[128];
     for (unsigned int i = 0; i < num_attributes; ++i) {
-        GLenum glType;
+        GLenum gltype;
         int size;
-        glGetActiveAttrib(id_, i, sizeof(buffer), 0, &size, &glType, buffer);
+        glGetActiveAttrib(id_, i, sizeof(buffer), 0, &size, &gltype, buffer);
         std::string name = std::string(buffer);
         attributes_[name].name = name;
         attributes_[name].size = size;
-        attributes_[name].type = UniformType::u_bool;
+        attributes_[name].type = gl_uniform_type_to_uniform_type(gltype);
         attributes_[name].location = glGetAttribLocation(id_, buffer);
     }
 
     for (unsigned int i = 0; i < num_uniform; ++i) {
-        GLenum glType;
+        GLenum gltype;
         int size;
-        glGetActiveUniform(id_, i, sizeof(buffer), 0, &size, &glType, buffer);
+        glGetActiveUniform(id_, i, sizeof(buffer), 0, &size, &gltype, buffer);
         std::string name = std::string(buffer);
         uniforms_[name].name = name;
-        uniforms_[name].type = UniformType::u_bool;
+        uniforms_[name].type = gl_uniform_type_to_uniform_type(gltype);
         uniforms_[name].size = size;
         uniforms_[name].location = glGetUniformLocation(id_, buffer);
     }
@@ -150,20 +176,24 @@ void Shader::set_vec4(const std::string& name, const glm::vec4& val) {
     if (has_uniform(name)) glUniform4fv(uniforms_[name].location, 1, &val[0]);
 }
 
-void Shader::set_vec4(const std::string& name, float x, float y, float z, float w) {
+void Shader::set_vec4(const std::string& name, float x, float y, float z,
+                      float w) {
     if (has_uniform(name)) glUniform4f(uniforms_[name].location, x, y, z, w);
 }
 
 void Shader::set_mat2(const std::string& name, const glm::mat2& val) {
-    if (has_uniform(name)) glUniformMatrix2fv(uniforms_[name].location, 1, GL_FALSE, &val[0][0]);
+    if (has_uniform(name))
+        glUniformMatrix2fv(uniforms_[name].location, 1, GL_FALSE, &val[0][0]);
 }
 
 void Shader::set_mat3(const std::string& name, const glm::mat3& val) {
-    if (has_uniform(name)) glUniformMatrix3fv(uniforms_[name].location, 1, GL_FALSE, &val[0][0]);
+    if (has_uniform(name))
+        glUniformMatrix3fv(uniforms_[name].location, 1, GL_FALSE, &val[0][0]);
 }
 
 void Shader::set_mat4(const std::string& name, const glm::mat4& val) {
-    if (has_uniform(name)) glUniformMatrix4fv(uniforms_[name].location, 1, GL_FALSE, &val[0][0]);
+    if (has_uniform(name))
+        glUniformMatrix4fv(uniforms_[name].location, 1, GL_FALSE, &val[0][0]);
 }
 
 }  // namespace MR

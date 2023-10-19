@@ -177,7 +177,14 @@ void RendererView::run() {
     glfwTerminate();
 }
 
-void RendererView::load_model(std::string& file_path) {}
+void RendererView::load_model(std::string& file_path) {
+    // load obj model
+    if (Scene::cur_model_path != file_path) {
+        Scene::model = std::make_shared<Model>(file_path);
+        Scene::cur_model_path = file_path;
+    }
+    // load meta file
+}
 
 void RendererView::render_main_side(const GLuint& image) {
     ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_None);

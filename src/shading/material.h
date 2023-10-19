@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 #include "shader.h"
 #include "shading_type.h"
 #include "glm/glm.hpp"
@@ -19,9 +19,12 @@ public:
 private:
     Shader* shader_;
 
-#define _FUNC(name) std::map<std::string, UniformValue_##name> map_uniform_##name##_;
+#define _FUNC(name) \
+    std::unordered_map<std::string, UniformValue_##name> map_uniform_##name##_;
     UNIFORM_FOREACH(_FUNC)
 #undef _FUNC
+    std::unordered_map<std::string, UniformValue_Sampler> map_unifrom_sampler;
+    std::unordered_map<std::string, std::string> map_sampler_to_tex_name;
 };
 
 }  // namespace MR

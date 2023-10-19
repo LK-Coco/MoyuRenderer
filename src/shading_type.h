@@ -55,4 +55,9 @@ struct VertexAttribute{
 #undef _FUNCTION
 // clang-format on
 
+struct UniformValue_Sampler {
+    UniformType type;
+    unsigned int value;
+};
+
 }  // namespace MR
