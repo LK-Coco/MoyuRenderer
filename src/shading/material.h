@@ -16,7 +16,7 @@ public:
     UNIFORM_FOREACH(_FUNC)
 #undef _FUNC
 
-private:
+protected:
     Shader* shader_;
 
 #define _FUNC(name) \

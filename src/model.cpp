@@ -23,9 +23,9 @@ Model::Model(std::string file_path) {
     std::cout << "model load ok!   mesh:" << meshes_.size() << std::endl;
 }
 
-void Model::render(std::shared_ptr<Shader>& shader) {
+void Model::render(std::shared_ptr<Material>& mat) {
     for (int i = 0; i < meshes_.size(); ++i) {
-        meshes_[i].draw(shader);
+        meshes_[i].draw(mat);
     }
 }
 
@@ -74,15 +74,17 @@ Mesh Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
         }
     }
 
-    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-    load_material_textures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+    // aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+    // load_material_textures(material, aiTextureType_DIFFUSE,
+    // "texture_diffuse");
 
-    load_material_textures(material, aiTextureType_SPECULAR,
-                           "texture_specular");
+    // load_material_textures(material, aiTextureType_SPECULAR,
+    //                        "texture_specular");
 
-    load_material_textures(material, aiTextureType_HEIGHT, "texture_normal");
+    // load_material_textures(material, aiTextureType_HEIGHT, "texture_normal");
 
-    load_material_textures(material, aiTextureType_AMBIENT, "texture_height");
+    // load_material_textures(material, aiTextureType_AMBIENT,
+    // "texture_height");
 
     return Mesh(vertices, indices, textures);
 }

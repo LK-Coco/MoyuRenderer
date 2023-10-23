@@ -5,7 +5,7 @@
 #include <memory>
 #include "glm/glm.hpp"
 #include "shading/texture.h"
-#include "shader.h"
+#include "shading/material.h"
 
 namespace MR {
 
@@ -25,7 +25,7 @@ public:
          std::vector<Texture> textures);
     ~Mesh() = default;
 
-    void draw(std::shared_ptr<Shader>& shader);
+    void draw(std::shared_ptr<Material>& mat);
     void init();
 
 private:

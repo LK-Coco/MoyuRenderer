@@ -51,12 +51,13 @@ void Mesh::init() {
     glBindVertexArray(0);
 }
 
-void Mesh::draw(std::shared_ptr<Shader> &shader) {
+void Mesh::draw(std::shared_ptr<Material> &mat) {
     std::string name = "texture_diffuse0";
     auto tex = Resources::get_texture(name);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex->id);
-    glUniform1i(glGetUniformLocation(shader->get_id(), name.c_str()), 0);
+    glUniform1i(glGetUniformLocation(mat->get_shader()->get_id(), name.c_str()),
+                0);
 
     glBindVertexArray(vao_);
     glDrawElements(GL_TRIANGLES, GLsizei(indices_.size()), GL_UNSIGNED_INT, 0);

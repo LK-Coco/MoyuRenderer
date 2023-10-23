@@ -9,7 +9,7 @@ public:
     Rasterizer();
 
     void render(std::shared_ptr<Object>& object,
-                std::shared_ptr<Shader>& shader) override;
+                std::shared_ptr<Material>& mat) override;
 
     void render_skybox() override;
 

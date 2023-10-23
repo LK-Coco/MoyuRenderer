@@ -12,6 +12,7 @@
 #include "model.h"
 #include "cube.h"
 #include "rasterizer.h"
+#include "shading/pbr_material.h"
 
 namespace MR {
 
@@ -101,10 +102,17 @@ void RendererView::init(int width, int height) {
     ImGui_ImplOpenGL3_Init("#version 450");
 
     Scene::model =
-        std::make_shared<Model>("assets/AfricanHead/african_head.obj");
-    shader_ =
-        std::make_shared<Shader>("assets/shaders/blinn_phong/blinn_phong.vs",
-                                 "assets/shaders/blinn_phong/blinn_phong.fs");
+        std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
+    obj_mat_ =
+        std::make_shared<PBRMaterial>("assets/shaders/blinn_phong/pbr.vs",
+                                      "assets/shaders/blinn_phong/pbr.fs");
+    auto pbr = (PBRMaterial*)obj_mat_.get();
+    pbr->set_maps("assets/DamagedHelmet/Default_albedo.jpg",
+                  "assets/DamagedHelmet/Default_normal.jpg",
+                  "assets/DamagedHelmet/Default_metalRoughness.jpg",
+                  "assets/DamagedHelmet/Default_metalRoughness.jpg",
+                  "assets/DamagedHelmet/Default_AO.jpg");
+
     renderer_ = std::make_shared<Rasterizer>();
 
     skybox_shader_ = std::make_shared<Shader>(
@@ -134,18 +142,21 @@ void RendererView::run() {
             glm::radians(60.f), (float)Scene::width / (float)Scene::height,
             0.1f, 100.0f);
         glm::mat4 view = Scene::camera->get_view_mat();
-        shader_->use();
-        shader_->set_mat4("projection", projection);
-        shader_->set_mat4("view", view);
+
+        // TODO 待优化mat的使用
+        auto shader = obj_mat_->get_shader();
+        shader->use();
+        shader->set_mat4("projection", projection);
+        shader->set_mat4("view", view);
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         // shader_->set_mat4("model", model);
-        shader_->set_vec3("light_pos", Scene::point_light->position);
-        shader_->set_vec3("view_pos", Scene::camera->position);
-        shader_->set_vec4("light_color", Scene::point_light->color);
+        shader->set_vec3("light_pos", Scene::point_light->position);
+        shader->set_vec3("view_pos", Scene::camera->position);
+        shader->set_vec4("light_color", Scene::point_light->color);
 
-        renderer_->render(Scene::model, shader_);
+        renderer_->render(Scene::model, obj_mat_);
 
         view = glm::mat4(glm::mat3(view));  // 移除translation参数
         skybox_shader_->use();

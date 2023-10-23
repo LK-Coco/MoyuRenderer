@@ -3,7 +3,7 @@
 #include "GLFW/glfw3.h"
 
 #include "renderer.h"
-#include "shader.h"
+#include "shading/material.h"
 #include "camera.h"
 #include "skybox.h"
 
@@ -33,7 +33,7 @@ private:
     // Camera camera_{glm::vec3(0.f, 0.f, 15.f), glm::vec3(0.f, 0.f, 0.f)};
 
     // std::shared_ptr<Object> model_;
-    std::shared_ptr<Shader> shader_;
+    std::shared_ptr<Material> obj_mat_;
     std::shared_ptr<Renderer> renderer_;
 
     const int target_frame_rate_ = 60;

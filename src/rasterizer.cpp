@@ -41,13 +41,13 @@ Rasterizer::Rasterizer() : fbo_(0), texture_id_(0) {
 }
 
 void Rasterizer::render(std::shared_ptr<Object>& object,
-                        std::shared_ptr<Shader>& shader) {
+                        std::shared_ptr<Material>& mat) {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
     glViewport(0, 0, Scene::width, Scene::height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0f, 0.0f, 0.9f, 1.0f);
 
-    object->render(shader);
+    object->render(mat);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
