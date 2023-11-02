@@ -32,7 +32,7 @@ private:
 
     // Camera camera_{glm::vec3(0.f, 0.f, 15.f), glm::vec3(0.f, 0.f, 0.f)};
 
-    // std::shared_ptr<Object> model_;
+    std::shared_ptr<Shader> obj_shader_;
     std::shared_ptr<Material> obj_mat_;
     std::shared_ptr<Renderer> renderer_;
 

@@ -103,10 +103,12 @@ void RendererView::init(int width, int height) {
 
     Scene::model =
         std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
-    obj_mat_ =
-        std::make_shared<PBRMaterial>("assets/shaders/blinn_phong/pbr.vs",
-                                      "assets/shaders/blinn_phong/pbr.fs");
+    obj_shader_ = std::make_shared<Shader>("assets/shaders/pbr/pbr.vs",
+                                           "assets/shaders/pbr/pbr.fs");
+    obj_mat_ = std::make_shared<PBRMaterial>();
+
     auto pbr = (PBRMaterial*)obj_mat_.get();
+    pbr->set_shader(obj_shader_.get());
     pbr->set_maps("assets/DamagedHelmet/Default_albedo.jpg",
                   "assets/DamagedHelmet/Default_normal.jpg",
                   "assets/DamagedHelmet/Default_metalRoughness.jpg",
@@ -151,10 +153,16 @@ void RendererView::run() {
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        // shader_->set_mat4("model", model);
-        shader->set_vec3("light_pos", Scene::point_light->position);
-        shader->set_vec3("view_pos", Scene::camera->position);
-        shader->set_vec4("light_color", Scene::point_light->color);
+        shader->set_mat4("model", model);
+        shader->set_mat3("normalMatrix",
+                         glm::transpose(glm::inverse(glm::mat3(model))));
+        shader->set_vec3("camPos", Scene::camera->position);
+        for (int i = 0; i < 4; i++) {
+            shader->set_vec3("lightPositions[" + std::to_string(i) + "]",
+                             Scene::point_light->position);
+            shader->set_vec4("lightColors[" + std::to_string(i) + "]",
+                             Scene::point_light->color);
+        }
 
         renderer_->render(Scene::model, obj_mat_);
 
