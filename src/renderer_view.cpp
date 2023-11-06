@@ -8,17 +8,20 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <glm/glm.hpp>
+#include <memory>
 #include "glad/glad.h"
 #include "model.h"
 #include "cube.h"
 #include "rasterizer.h"
 #include "shading/pbr_material.h"
+#include "shading/blinn_material.h"
+#include "utility.h"
 
 namespace MR {
 
 void process_input(GLFWwindow* window, double delta_time);
 
-bool get_file_path(std::string* file_path);
+// bool get_file_path(std::string* file_path);
 
 RendererView::RendererView(int width, int height) { init(width, height); }
 
@@ -102,18 +105,17 @@ void RendererView::init(int width, int height) {
     ImGui_ImplOpenGL3_Init("#version 450");
 
     Scene::model =
+        // std::make_shared<Model>("assets/AfricanHead/african_head.obj");
         std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
-    obj_shader_ = std::make_shared<Shader>("assets/shaders/pbr/pbr.vs",
-                                           "assets/shaders/pbr/pbr.fs");
-    obj_mat_ = std::make_shared<PBRMaterial>();
-
-    auto pbr = (PBRMaterial*)obj_mat_.get();
-    pbr->set_shader(obj_shader_.get());
-    pbr->set_maps("assets/DamagedHelmet/Default_albedo.jpg",
-                  "assets/DamagedHelmet/Default_normal.jpg",
-                  "assets/DamagedHelmet/Default_metalRoughness.jpg",
-                  "assets/DamagedHelmet/Default_metalRoughness.jpg",
-                  "assets/DamagedHelmet/Default_AO.jpg");
+    cur_material_ = 1;
+    // auto pbr = (PBRMaterial*)obj_mat_.get();
+    // pbr->set_shader(obj_shader_.get());
+    // pbr->set_maps("assets/DamagedHelmet/Default_albedo.jpg",
+    //               "assets/DamagedHelmet/Default_normal.jpg",
+    //               "assets/DamagedHelmet/Default_metalRoughness.jpg",
+    //               "assets/DamagedHelmet/Default_metalRoughness.jpg",
+    //               "assets/DamagedHelmet/Default_AO.jpg");
+    switch_material();
 
     renderer_ = std::make_shared<Rasterizer>();
 
@@ -146,26 +148,29 @@ void RendererView::run() {
         glm::mat4 view = Scene::camera->get_view_mat();
 
         // TODO 待优化mat的使用
-        auto shader = obj_mat_->get_shader();
-        shader->use();
-        shader->set_mat4("projection", projection);
-        shader->set_mat4("view", view);
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        shader->set_mat4("model", model);
-        shader->set_mat3("normalMatrix",
-                         glm::transpose(glm::inverse(glm::mat3(model))));
-        shader->set_vec3("camPos", Scene::camera->position);
-        for (int i = 0; i < 4; i++) {
-            shader->set_vec3("lightPositions[" + std::to_string(i) + "]",
-                             Scene::point_light->position);
-            shader->set_vec4("lightColors[" + std::to_string(i) + "]",
-                             Scene::point_light->color);
-        }
+        // auto shader = obj_mat_->get_shader();
+        // shader->use();
+        // shader->set_mat4("projection", projection);
+        // shader->set_mat4("view", view);
+        // glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        // shader->set_mat4("model", model);
+        // shader->set_mat3("normalMatrix",
+        //                  glm::transpose(glm::inverse(glm::mat3(model))));
+        // shader->set_vec3("camPos", Scene::camera->position);
+        // for (int i = 0; i < 4; i++) {
+        //     shader->set_vec3("lightPositions[" + std::to_string(i) + "]",
+        //                      Scene::point_light->position);
+        //     shader->set_vec4("lightColors[" + std::to_string(i) + "]",
+        //                      Scene::point_light->color);
+        // }
+
+        obj_mat_->fill_unifrom();
 
         renderer_->render(Scene::model, obj_mat_);
 
+        // 天空盒
         view = glm::mat4(glm::mat3(view));  // 移除translation参数
         skybox_shader_->use();
         skybox_shader_->set_mat4("projection", projection);
@@ -244,10 +249,18 @@ void RendererView::render_right_side() {
                 }
                 if (ImGui::Button("Select a model")) {
                     std::string file_path;
-                    if (get_file_path(&file_path)) {
+                    if (Utils::get_file_path(&file_path,
+                                             "model files\0*.obj\0")) {
                         Scene::model = std::make_shared<Model>(file_path);
                         Scene::cur_model_path = file_path;
                     }
+                }
+                const char* material[] = {"blinn", "pbr"};
+                if (ImGui::Combo("Selcet a Material", &cur_material_, material,
+                                 IM_ARRAYSIZE(material))) {
+                    // switch_material();
+
+                    obj_mat_->display_ui();
                 }
                 ImGui::Text("Current Model: %s", Scene::cur_model_path.c_str());
                 ImGui::DragFloat("Camera Pos X", &Scene::camera->position.x);
@@ -259,6 +272,34 @@ void RendererView::render_right_side() {
             ImGui::EndTabBar();
         }
         ImGui::End();
+    }
+}
+
+void RendererView::switch_material() {
+    if (cur_material_ == 0) {
+        // blinn
+        obj_shader_ = std::make_shared<Shader>(
+            "assets/shaders/blinn_phong/blinn_phong.vs",
+            "assets/shaders/blinn_phong/blinn_phong.fs");
+
+        obj_mat_ = std::make_shared<BlinnMaterial>();
+        obj_mat_->set_shader(obj_shader_.get());
+        BlinnMaterial* mat = (BlinnMaterial*)obj_mat_.get();
+        mat->set_diffuse_map("assets/AfricanHead/african_head_diffuse.tga");
+    } else if (cur_material_ == 1) {
+        // pbr
+        obj_shader_ = std::make_shared<Shader>("assets/shaders/pbr/pbr.vs",
+                                               "assets/shaders/pbr/pbr.fs");
+
+        obj_mat_ = std::make_shared<PBRMaterial>();
+        obj_mat_->set_shader(obj_shader_.get());
+
+        auto pbr = (PBRMaterial*)obj_mat_.get();
+        pbr->set_maps("assets/DamagedHelmet/Default_albedo.jpg",
+                      "assets/DamagedHelmet/Default_normal.jpg",
+                      "assets/DamagedHelmet/Default_metalRoughness.jpg",
+                      "assets/DamagedHelmet/Default_metalRoughness.jpg",
+                      "assets/DamagedHelmet/Default_AO.jpg");
     }
 }
 
@@ -276,22 +317,22 @@ void process_input(GLFWwindow* window, double delta_time) {
         Scene::camera->on_process_keyboard(CameraMovement::RIGHT, delta_time);
 }
 
-bool get_file_path(std::string* file_path) {
-    TCHAR szBuffer[MAX_PATH] = {0};
-    OPENFILENAME ofn = {0};
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = nullptr;
-    ofn.lpstrFilter = "model files\0*.obj\0";  // 要选择的文件后缀
-    ofn.lpstrFile = szBuffer;                  // 存放文件的缓冲区
-    ofn.nMaxFile = sizeof(szBuffer) / sizeof(*szBuffer);
-    ofn.nFilterIndex = 0;
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST |
-                OFN_EXPLORER;  // 标志如果是多选要加上OFN_ALLOWMULTISELECT
-    BOOL bSel = GetOpenFileName(&ofn);
+// bool get_file_path(std::string* file_path) {
+//     TCHAR szBuffer[MAX_PATH] = {0};
+//     OPENFILENAME ofn = {0};
+//     ofn.lStructSize = sizeof(ofn);
+//     ofn.hwndOwner = nullptr;
+//     ofn.lpstrFilter = "model files\0*.obj\0";  // 要选择的文件后缀
+//     ofn.lpstrFile = szBuffer;                  // 存放文件的缓冲区
+//     ofn.nMaxFile = sizeof(szBuffer) / sizeof(*szBuffer);
+//     ofn.nFilterIndex = 0;
+//     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST |
+//                 OFN_EXPLORER;  // 标志如果是多选要加上OFN_ALLOWMULTISELECT
+//     BOOL bSel = GetOpenFileName(&ofn);
 
-    *file_path = szBuffer;
+//     *file_path = szBuffer;
 
-    return bSel;
-}
+//     return bSel;
+// }
 
 }  // namespace MR

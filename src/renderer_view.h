@@ -19,6 +19,8 @@ private:
     void load_model(std::string& file_path);
     void render_main_side(const GLuint& image);
     void render_right_side();
+    void switch_material();
+    void switch_render_mode();
 
     GLFWwindow* window_;
 
@@ -27,6 +29,7 @@ private:
     float mouse_ypos_ = 0;
 
     int cur_render_mode_ = 0;
+    int cur_material_ = 0;
 
     std::shared_ptr<Shader> skybox_shader_;
 

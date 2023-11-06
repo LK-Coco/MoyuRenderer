@@ -12,6 +12,10 @@ public:
                   const std::string& metallic_map_path,
                   const std::string& roughness_map_path,
                   const std::string& ao_map_path);
+
+    void display_ui() override;
+
+    void fill_unifrom() override;
 };
 
 }  // namespace MR

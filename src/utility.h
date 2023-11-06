@@ -2,6 +2,8 @@
 
 #include <string>
 
+namespace MR {
+
 #define SHASH(name) custom_simple_hash(name)
 
 inline unsigned int custom_simple_hash(const std::string& str) {
@@ -20,3 +22,10 @@ inline unsigned int custom_simple_hash(const char* cStr) {
     std::string str(cStr);
     return custom_simple_hash(str);
 }
+
+class Utils {
+public:
+    static bool get_file_path(std::string* file_path, const char* file_extern);
+};
+
+}  // namespace MR

@@ -9,6 +9,10 @@ namespace MR {
 
 class Material {
 public:
+    virtual void display_ui(){};
+
+    virtual void fill_unifrom() = 0;
+
     Shader* get_shader() const;
     void set_shader(Shader* shader);
 
