@@ -3,6 +3,10 @@
 #include "glm/fwd.hpp"
 #include <glm/glm.hpp>
 #include "scene.h"
+#include "utility.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 namespace MR {
 
@@ -11,36 +15,47 @@ void PBRMaterial::set_maps(const std::string& albedo_map_path,
                            const std::string& metallic_map_path,
                            const std::string& roughness_map_path,
                            const std::string& ao_map_path) {
-    auto albedo_map = Resources::load_texture("albedo_map", albedo_map_path);
-    auto normal_map = Resources::load_texture("normal_map", normal_map_path);
-    auto metallic_map =
-        Resources::load_texture("metallic_map", metallic_map_path);
-    auto roughness_map =
-        Resources::load_texture("roughness_map", roughness_map_path);
-    auto ao_map = Resources::load_texture("ao_map", ao_map_path);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, albedo_map->id);
-    glUniform1i(glGetUniformLocation(shader_->get_id(), "albedoMap"), 0);
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, normal_map->id);
-    glUniform1i(glGetUniformLocation(shader_->get_id(), "normalMap"), 1);
-
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, metallic_map->id);
-    glUniform1i(glGetUniformLocation(shader_->get_id(), "metallicMap"), 2);
-
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, roughness_map->id);
-    glUniform1i(glGetUniformLocation(shader_->get_id(), "roughnessMap"), 3);
-
-    glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, ao_map->id);
-    glUniform1i(glGetUniformLocation(shader_->get_id(), "aoMap"), 4);
+    set_albedo_map(albedo_map_path);
+    set_normal_map(normal_map_path);
+    set_metallic_map(metallic_map_path);
+    set_roughness_map(roughness_map_path);
+    set_ao_map(ao_map_path);
 }
 
-void PBRMaterial::display_ui() {}
+void PBRMaterial::set_albedo_map(const std::string& file_path) {
+    albedo_map_ = Resources::load_texture("albedo_map", file_path);
+
+    shader_->set_int("albedoMap", 0);
+}
+void PBRMaterial::set_normal_map(const std::string& file_path) {
+    normal_map_ = Resources::load_texture("normal_map", file_path);
+
+    shader_->set_int("normalMap", 1);
+}
+void PBRMaterial::set_metallic_map(const std::string& file_path) {
+    metallic_map_ = Resources::load_texture("metallic_map", file_path);
+
+    shader_->set_int("metallicMap", 2);
+}
+void PBRMaterial::set_roughness_map(const std::string& file_path) {
+    roughness_map_ = Resources::load_texture("roughness_map", file_path);
+
+    shader_->set_int("roughnessMap", 3);
+}
+void PBRMaterial::set_ao_map(const std::string& file_path) {
+    ao_map_ = Resources::load_texture("ao_map", file_path);
+
+    shader_->set_int("aoMap", 4);
+}
+
+void PBRMaterial::display_ui() {
+    ImGui::Spacing();
+
+    if (auto ret = Utils::imgui_image_button("albedo_map", "albedoMap");
+        ret.has_value()) {
+        set_albedo_map(ret.value());
+    }
+}
 
 void PBRMaterial::fill_unifrom() {
     glm::mat4 projection = glm::perspective(
@@ -64,6 +79,12 @@ void PBRMaterial::fill_unifrom() {
         shader_->set_vec4("lightColors[" + std::to_string(i) + "]",
                           Scene::point_light->color);
     }
+
+    albedo_map_->bind(0);
+    normal_map_->bind(1);
+    metallic_map_->bind(2);
+    roughness_map_->bind(3);
+    ao_map_->bind(4);
 }
 
 }  // namespace MR

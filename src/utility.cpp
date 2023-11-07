@@ -1,9 +1,14 @@
-#include "utility.h"
 #include <Windows.h>
+#include <optional>
+#include "utility.h"
+#include "resources/resources.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 namespace MR {
 
-bool Utils::get_file_path(std::string* file_path, const char* file_extern) {
+std::optional<std::string> Utils::get_file_path(const char* file_extern) {
     TCHAR szBuffer[MAX_PATH] = {0};
     OPENFILENAME ofn = {0};
     ofn.lStructSize = sizeof(ofn);
@@ -16,9 +21,24 @@ bool Utils::get_file_path(std::string* file_path, const char* file_extern) {
                 OFN_EXPLORER;  // 标志如果是多选要加上OFN_ALLOWMULTISELECT
     BOOL bSel = GetOpenFileName(&ofn);
 
-    *file_path = szBuffer;
+    if (bSel) {
+        return std::make_optional(szBuffer);
+    } else {
+        return std::nullopt;
+    }
+}
 
-    return bSel;
+std::optional<std::string> Utils::imgui_image_button(
+    const std::string& image_name, const std::string& display_name) {
+    ImGui::TextWrapped("%s", display_name.c_str());
+    ImVec2 size{100, 100};
+    auto map = Resources::get_texture(image_name);
+    ImTextureID id = map == nullptr ? 0 : (ImTextureID)(map->id);
+    if (ImGui::ImageButton(id, size)) {
+        return get_file_path("image files\0*.jpg;*.png\0");
+    }
+
+    return std::nullopt;
 }
 
 }  // namespace MR

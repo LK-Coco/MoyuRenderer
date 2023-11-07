@@ -241,31 +241,31 @@ void RendererView::render_right_side() {
                          ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginTabBar("Overview", ImGuiTabBarFlags_None)) {
             if (ImGui::BeginTabItem("Base")) {
+                if (ImGui::Button("Select a model")) {
+                    auto ret = Utils::get_file_path("model files\0*.obj\0");
+                    if (ret.has_value()) {
+                        Scene::model = std::make_shared<Model>(ret.value());
+                        Scene::cur_model_path = ret.value();
+                    }
+                }
+                ImGui::TextWrapped("Current Model: %s",
+                                   Scene::cur_model_path.c_str());
                 const char* render_mode[] = {"rasterizer", "ray tracing"};
                 ImGui::SetNextItemWidth(window_width * 0.5f);
                 if (ImGui::Combo("Render Mode", &cur_render_mode_, render_mode,
                                  IM_ARRAYSIZE(render_mode))) {
                     // TODO 接入切换渲染模式
                 }
-                if (ImGui::Button("Select a model")) {
-                    std::string file_path;
-                    if (Utils::get_file_path(&file_path,
-                                             "model files\0*.obj\0")) {
-                        Scene::model = std::make_shared<Model>(file_path);
-                        Scene::cur_model_path = file_path;
-                    }
-                }
                 const char* material[] = {"blinn", "pbr"};
-                if (ImGui::Combo("Selcet a Material", &cur_material_, material,
+                ImGui::SetNextItemWidth(window_width * 0.5f);
+                if (ImGui::Combo("Material", &cur_material_, material,
                                  IM_ARRAYSIZE(material))) {
                     // switch_material();
-
-                    obj_mat_->display_ui();
                 }
-                ImGui::Text("Current Model: %s", Scene::cur_model_path.c_str());
-                ImGui::DragFloat("Camera Pos X", &Scene::camera->position.x);
-                ImGui::DragFloat("Camera Pos Y", &Scene::camera->position.y);
-                ImGui::DragFloat("Camera Pos Z", &Scene::camera->position.z);
+                obj_mat_->display_ui();
+                // ImGui::DragFloat("Camera Pos X", &Scene::camera->position.x);
+                // ImGui::DragFloat("Camera Pos Y", &Scene::camera->position.y);
+                // ImGui::DragFloat("Camera Pos Z", &Scene::camera->position.z);
 
                 ImGui::EndTabItem();
             }

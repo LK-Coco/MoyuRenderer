@@ -9,9 +9,11 @@ std::map<unsigned int, Texture> Resources::textures_ =
 std::map<unsigned int, TextureCube> Resources::textures_cube_ =
     std::map<unsigned int, TextureCube>();
 
-Texture* Resources::load_texture(std::string name, std::string path,
-                                 GLenum target, GLenum format, bool srgb) {
+Texture* Resources::load_texture(const std::string& name,
+                                 const std::string& path, GLenum target,
+                                 GLenum format, bool srgb) {
     auto id = SHASH(name);
+
     if (textures_.find(id) != textures_.end()) {
         return &textures_[id];
     }
@@ -25,8 +27,8 @@ Texture* Resources::load_texture(std::string name, std::string path,
     return nullptr;
 }
 
-TextureCube* Resources::load_texture_cube(std::string name,
-                                          std::string folder) {
+TextureCube* Resources::load_texture_cube(const std::string& name,
+                                          const std::string& folder) {
     unsigned int id = SHASH(name);
 
     if (Resources::textures_cube_.find(id) != Resources::textures_cube_.end())
@@ -37,7 +39,7 @@ TextureCube* Resources::load_texture_cube(std::string name,
     return &Resources::textures_cube_[id];
 }
 
-Texture* Resources::get_texture(std::string name) {
+Texture* Resources::get_texture(const std::string& name) {
     unsigned int id = SHASH(name);
 
     if (Resources::textures_.find(id) != Resources::textures_.end()) {
@@ -46,7 +48,7 @@ Texture* Resources::get_texture(std::string name) {
         return nullptr;
     }
 }
-TextureCube* Resources::get_texture_cube(std::string name) {
+TextureCube* Resources::get_texture_cube(const std::string& name) {
     unsigned int id = SHASH(name);
 
     if (Resources::textures_cube_.find(id) != Resources::textures_cube_.end()) {

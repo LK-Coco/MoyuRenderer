@@ -1,6 +1,7 @@
 #pragma once
 
 #include "material.h"
+#include "texture.h"
 
 namespace MR {
 
@@ -11,6 +12,9 @@ public:
     void display_ui() override;
 
     void fill_unifrom() override;
+
+private:
+    Texture* diffuse_map_;
 };
 
 }  // namespace MR

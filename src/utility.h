@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 namespace MR {
@@ -25,7 +26,10 @@ inline unsigned int custom_simple_hash(const char* cStr) {
 
 class Utils {
 public:
-    static bool get_file_path(std::string* file_path, const char* file_extern);
+    static std::optional<std::string> get_file_path(const char* file_extern);
+
+    static std::optional<std::string> imgui_image_button(
+        const std::string& image_name, const std::string& display_name);
 };
 
 }  // namespace MR

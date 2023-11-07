@@ -8,13 +8,15 @@ namespace MR {
 
 class Resources {
 public:
-    static Texture* load_texture(std::string name, std::string path,
+    static Texture* load_texture(const std::string& name,
+                                 const std::string& path,
                                  GLenum target = GL_TEXTURE_2D,
                                  GLenum format = GL_RGBA, bool srgb = false);
 
-    static TextureCube* load_texture_cube(std::string name, std::string folder);
-    static Texture* get_texture(std::string name);
-    static TextureCube* get_texture_cube(std::string name);
+    static TextureCube* load_texture_cube(const std::string& name,
+                                          const std::string& folder);
+    static Texture* get_texture(const std::string& name);
+    static TextureCube* get_texture_cube(const std::string& name);
 
 private:
     Resources();
