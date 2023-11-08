@@ -2,8 +2,8 @@
 
 namespace MR {
 
-void Texture::generate(unsigned int w, GLenum internal_format, GLenum format, GLenum type,
-                       void* data) {
+void Texture::generate(unsigned int w, GLenum internal_format, GLenum format,
+                       GLenum type, void* data) {
     glGenTextures(1, &id);
 
     width = w;
@@ -22,8 +22,8 @@ void Texture::generate(unsigned int w, GLenum internal_format, GLenum format, GL
     unbind();
 }
 
-void Texture::generate(unsigned int w, unsigned int h, GLenum internal_format, GLenum format,
-                       GLenum type, void* data) {
+void Texture::generate(unsigned int w, unsigned int h, GLenum internal_format,
+                       GLenum format, GLenum type, void* data) {
     glGenTextures(1, &id);
 
     width = w;
@@ -34,7 +34,8 @@ void Texture::generate(unsigned int w, unsigned int h, GLenum internal_format, G
     this->type = type;
 
     bind();
-    glTexImage2D(target, 0, internal_format, width, height, 0, format, type, data);
+    glTexImage2D(target, 0, internal_format, width, height, 0, format, type,
+                 data);
     glTexParameteri(target, GL_TEXTURE_MIN_FILTER, filter_min);
     glTexParameteri(target, GL_TEXTURE_MAG_FILTER, filter_max);
     glTexParameteri(target, GL_TEXTURE_WRAP_S, wrap_s);
@@ -43,8 +44,9 @@ void Texture::generate(unsigned int w, unsigned int h, GLenum internal_format, G
     unbind();
 }
 
-void Texture::generate(unsigned int w, unsigned int h, unsigned int d, GLenum internal_format,
-                       GLenum format, GLenum type, void* data) {
+void Texture::generate(unsigned int w, unsigned int h, unsigned int d,
+                       GLenum internal_format, GLenum format, GLenum type,
+                       void* data) {
     glGenTextures(1, &id);
 
     width = w;
@@ -55,7 +57,8 @@ void Texture::generate(unsigned int w, unsigned int h, unsigned int d, GLenum in
     this->type = type;
 
     bind();
-    glTexImage3D(target, 0, internal_format, width, height, depth, 0, format, type, data);
+    glTexImage3D(target, 0, internal_format, width, height, depth, 0, format,
+                 type, data);
     glTexParameteri(target, GL_TEXTURE_MIN_FILTER, filter_min);
     glTexParameteri(target, GL_TEXTURE_MAG_FILTER, filter_max);
     glTexParameteri(target, GL_TEXTURE_WRAP_S, wrap_s);
@@ -70,9 +73,11 @@ void Texture::resize(unsigned int w, unsigned int h, unsigned int d) {
     if (target == GL_TEXTURE_1D) {
         glTexImage1D(GL_TEXTURE_1D, 0, internal_format, w, 0, format, type, 0);
     } else if (target == GL_TEXTURE_2D) {
-        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0, format, type, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0, format, type,
+                     0);
     } else if (target == GL_TEXTURE_3D) {
-        glTexImage3D(GL_TEXTURE_3D, 0, internal_format, w, h, d, 0, format, type, 0);
+        glTexImage3D(GL_TEXTURE_3D, 0, internal_format, w, h, d, 0, format,
+                     type, 0);
     }
 }
 
@@ -82,6 +87,8 @@ void Texture::bind(int unit) {
 }
 
 void Texture::unbind() { glBindTexture(target, 0); }
+
+void Texture::release() { glDeleteTextures(1, &id); }
 
 void Texture::set_wrap_mode(GLenum wrap_mode, bool is_bind) {
     if (is_bind) bind();
@@ -127,15 +134,16 @@ void Texture::set_filter_max(GLenum filter, bool is_bind) {
 //             format = GL_RGBA;
 
 //         glBindTexture(GL_TEXTURE_2D, id);
-//         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-//         glGenerateMipmap(GL_TEXTURE_2D);
+//         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
+//         GL_UNSIGNED_BYTE, data); glGenerateMipmap(GL_TEXTURE_2D);
 
 //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
 //                         format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
 //                         format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-//         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-//         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+//         GL_LINEAR_MIPMAP_LINEAR); glTexParameteri(GL_TEXTURE_2D,
+//         GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 //         std::cout << "Texture load ok! " << file_path << path << std::endl;
 //     }

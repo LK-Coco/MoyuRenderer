@@ -27,18 +27,21 @@ public:
     Texture(){};
     ~Texture(){};
 
-    void generate(unsigned int w, GLenum internal_format, GLenum format, GLenum type, void* data);
-
-    void generate(unsigned int w, unsigned int h, GLenum internal_format, GLenum format,
+    void generate(unsigned int w, GLenum internal_format, GLenum format,
                   GLenum type, void* data);
 
-    void generate(unsigned int w, unsigned int h, unsigned int d, GLenum internal_format,
+    void generate(unsigned int w, unsigned int h, GLenum internal_format,
                   GLenum format, GLenum type, void* data);
+
+    void generate(unsigned int w, unsigned int h, unsigned int d,
+                  GLenum internal_format, GLenum format, GLenum type,
+                  void* data);
 
     void resize(unsigned int w, unsigned int h = 0, unsigned int d = 0);
 
     void bind(int unit = -1);
     void unbind();
+    void release();
 
     void set_wrap_mode(GLenum wrap_mode, bool is_bind = false);
     void set_filter_min(GLenum filter, bool is_bind = false);

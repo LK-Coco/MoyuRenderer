@@ -25,6 +25,8 @@ public:
     TextureCube();
     ~TextureCube();
 
+    void generate_texture_id();
+
     void generate_face(GLenum face, unsigned int width, unsigned int height,
                        GLenum format, GLenum type, unsigned char* data);
 
@@ -36,6 +38,7 @@ public:
 
     void bind(int unit = -1);
     void unbind();
+    void release();
 };
 
 }  // namespace MR

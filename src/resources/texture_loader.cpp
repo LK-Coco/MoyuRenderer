@@ -1,3 +1,4 @@
+#include <optional>
 #include <vector>
 #include <iostream>
 #include "texture_loader.h"
@@ -5,8 +6,10 @@
 
 namespace MR {
 
-Texture TextureLoader::load_texture(const std::string &path, GLenum target,
-                                    GLenum internal_format, bool srgb) {
+std::optional<Texture> TextureLoader::load_texture(const std::string &path,
+                                                   GLenum target,
+                                                   GLenum internal_format,
+                                                   bool srgb) {
     Texture texture;
     texture.target = target;
     texture.internal_format = internal_format;
@@ -18,7 +21,16 @@ Texture TextureLoader::load_texture(const std::string &path, GLenum target,
 
     // flip textures on their y coordinate while loading
     // stbi_set_flip_vertically_on_load(true);
+    if (update_texture(texture, path, texture.target, texture.internal_format,
+                       srgb))
+        return texture;
+    else
+        return std::nullopt;
+}
 
+bool TextureLoader::update_texture(Texture &tex, const std::string &path,
+                                   GLenum target, GLenum internal_format,
+                                   bool srgb) {
     int width, height, nr_components;
     unsigned char *data =
         stbi_load(path.c_str(), &width, &height, &nr_components, 0);
@@ -32,33 +44,57 @@ Texture TextureLoader::load_texture(const std::string &path, GLenum target,
             format = GL_RGBA;
 
         if (target == GL_TEXTURE_1D)
-            texture.generate(width, texture.internal_format, format,
-                             GL_UNSIGNED_BYTE, data);
+            tex.generate(width, tex.internal_format, format, GL_UNSIGNED_BYTE,
+                         data);
         else if (target == GL_TEXTURE_2D)
-            texture.generate(width, height, texture.internal_format, format,
-                             GL_UNSIGNED_BYTE, data);
+            tex.generate(width, height, tex.internal_format, format,
+                         GL_UNSIGNED_BYTE, data);
         stbi_image_free(data);
     } else {
         stbi_image_free(data);
-        return texture;
+        return false;
     }
-    texture.width = width;
-    texture.height = height;
+    tex.width = width;
+    tex.height = height;
 
-    return texture;
+    return true;
 }
 
-TextureCube TextureLoader::load_texture_cube(
+std::optional<TextureCube> TextureLoader::load_texture_cube(
     std::string top, std::string bottom, std::string left, std::string right,
     std::string front, std::string back) {
     TextureCube texture;
 
-    stbi_set_flip_vertically_on_load(false);
-
     unsigned int texture_id;
     glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+    texture.id = texture_id;
 
+    if (update_texture_cube(texture, top, bottom, left, right, front, back))
+        return texture;
+    else
+        return std::nullopt;
+}
+
+std::optional<TextureCube> TextureLoader::load_texture_cube(std::string path) {
+    return TextureLoader::load_texture_cube(
+        path + "right.jpg", path + "left.jpg", path + "top.jpg",
+        path + "bottom.jpg", path + "front.jpg", path + "back.jpg");
+}
+
+bool TextureLoader::update_texture_cube(TextureCube &tex_cube,
+                                        std::string path) {
+    return update_texture_cube(tex_cube, path + "right.jpg", path + "left.jpg",
+                               path + "top.jpg", path + "bottom.jpg",
+                               path + "front.jpg", path + "back.jpg");
+}
+
+bool TextureLoader::update_texture_cube(TextureCube &tex_cube, std::string top,
+                                        std::string bottom, std::string left,
+                                        std::string right, std::string front,
+                                        std::string back) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, tex_cube.id);
+
+    stbi_set_flip_vertically_on_load(false);
     std::vector<std::string> faces = {top, bottom, left, right, front, back};
     for (unsigned int i = 0; i < faces.size(); ++i) {
         int width, height, nr_components;
@@ -72,7 +108,7 @@ TextureCube TextureLoader::load_texture_cube(
         } else {
             stbi_image_free(data);
             std::cout << "load fail:" << faces[i] << std::endl;
-            return texture;
+            return false;
         }
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -80,41 +116,8 @@ TextureCube TextureLoader::load_texture_cube(
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    // if (texture.mipmapping) glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
-    texture.id = texture_id;
-
-    return texture;
-}
-TextureCube TextureLoader::load_texture_cube(std::string path) {
-    return TextureLoader::load_texture_cube(
-        path + "right.jpg", path + "left.jpg", path + "top.jpg",
-        path + "bottom.jpg", path + "front.jpg", path + "back.jpg");
-    // TextureCube texture;
-
-    // int width, height, nr_components;
-    // unsigned char *data =
-    //     stbi_load(path.c_str(), &width, &height, &nr_components, 0);
-    // if (data) {
-    //     GLenum format;
-    //     if (nr_components == 3)
-    //         format = GL_RGB;
-    //     else
-    //         format = GL_RGBA;
-
-    //     for (unsigned int i = 0; i < 6; ++i)
-    //         texture.generate_face(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, width,
-    //                               height, format, GL_UNSIGNED_BYTE, data);
-
-    //     stbi_image_free(data);
-    // } else {
-    //     stbi_image_free(data);
-    //     return texture;
-    // }
-
-    // if (texture.mipmapping) glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-
-    // return texture;
+    return true;
 }
 
 }  // namespace MR

@@ -2,8 +2,10 @@
 
 namespace MR {
 
-TextureCube::TextureCube() { glGenTextures(1, &id); }
+TextureCube::TextureCube() {}
 TextureCube::~TextureCube() {}
+
+void TextureCube::generate_texture_id() { glGenTextures(1, &id); }
 
 void TextureCube::generate_face(GLenum face, unsigned int width,
                                 unsigned int height, GLenum format, GLenum type,
@@ -46,5 +48,7 @@ void TextureCube::bind(int unit) {
 }
 
 void TextureCube::unbind() { glBindTexture(GL_TEXTURE_CUBE_MAP, 0); }
+
+void TextureCube::release() { glDeleteTextures(1, &id); }
 
 }  // namespace MR
