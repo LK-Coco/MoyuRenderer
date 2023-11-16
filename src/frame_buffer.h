@@ -6,13 +6,15 @@ namespace MR {
 
 class FrameBuffer {
 public:
-    FrameBuffer();
+    FrameBuffer(int width, int height, bool bind_tex);
 
     void bind();
 
     void unbind();
 
     inline GLuint get_id() const { return fbo_; }
+
+    inline GLuint get_texture_id() const { return texture_id_; }
 
 private:
     GLuint fbo_;

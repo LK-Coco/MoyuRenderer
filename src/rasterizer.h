@@ -1,6 +1,7 @@
 #pragma once
 #include "renderer.h"
 #include "skybox.h"
+#include "frame_buffer.h"
 
 namespace MR {
 
@@ -16,8 +17,7 @@ public:
     GLuint get_image_id() const override;
 
 private:
-    GLuint fbo_;
-    GLuint texture_id_;
+    FrameBuffer fbo_;
     Skybox skybox_;
 };
 

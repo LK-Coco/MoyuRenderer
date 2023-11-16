@@ -9,6 +9,6 @@ AllowShortCaseLabelsOnASingleLine: true
 AllowAllConstructorInitializersOnNextLine: false
 AlwaysBreakBeforeMultilineStrings: false
 ColumnLimit: 80
-PointerAlignment: Right
+PointerAlignment: Left
 SortIncludes: false
 SortUsingDeclarations: false

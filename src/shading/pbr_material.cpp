@@ -23,7 +23,12 @@ void PBRMaterial::set_maps(const std::string& albedo_map_path,
 }
 
 void PBRMaterial::set_albedo_map(const std::string& file_path) {
-    albedo_map_ = Resources::load_texture("albedo_map", file_path);
+    if (albedo_map_ = Resources::get_texture("albedo_map");
+        albedo_map_ != nullptr) {
+        Resources::update_texture("albedo_map", file_path);
+    } else {
+        albedo_map_ = Resources::load_texture("albedo_map", file_path);
+    }
 
     shader_->set_int("albedoMap", 0);
 }
@@ -55,6 +60,18 @@ void PBRMaterial::display_ui() {
         ret.has_value()) {
         set_albedo_map(ret.value());
     }
+    if (auto ret = Utils::imgui_image_button("normal_map", "normalMap");
+        ret.has_value()) {
+    }
+    if (auto ret = Utils::imgui_image_button("metallic_map", "metallicMap");
+        ret.has_value()) {
+    }
+    if (auto ret = Utils::imgui_image_button("roughness_map", "roughnessMap");
+        ret.has_value()) {
+    }
+    if (auto ret = Utils::imgui_image_button("ao_map", "aoMap");
+        ret.has_value()) {
+    }
 }
 
 void PBRMaterial::fill_unifrom() {
@@ -80,6 +97,7 @@ void PBRMaterial::fill_unifrom() {
                           Scene::point_light->color);
     }
 
+    // bind texture
     albedo_map_->bind(0);
     normal_map_->bind(1);
     metallic_map_->bind(2);

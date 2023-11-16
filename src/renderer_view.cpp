@@ -122,6 +122,10 @@ void RendererView::init(int width, int height) {
     skybox_shader_ = std::make_shared<Shader>(
         "assets/shaders/skybox/skybox.vs", "assets/shaders/skybox/skybox.fs");
 
+    environment_map_to_cubemap_shader_ = std::make_shared<Shader>(
+        "assets/shaders/pbr/environment_map_to_cubemap.vs",
+        "assets/shaders/pbr/environment_map_to_cubemap.fs");
+
     Scene::point_light = std::make_shared<PointLight>(
         glm::vec4(0.9f, 0.8f, 0.8f, 1), glm::vec3(1, 1, 3));
 

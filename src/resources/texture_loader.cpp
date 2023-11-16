@@ -28,6 +28,18 @@ std::optional<Texture> TextureLoader::load_texture(const std::string &path,
         return std::nullopt;
 }
 
+std::optional<Texture> TextureLoader::load_hdr_texture(
+    const std::string &path) {
+    Texture texture;
+    texture.target = GL_TEXTURE_2D;
+    texture.internal_format = GL_RGB16F;
+
+    if (update_hdr_texture(texture, path))
+        return texture;
+    else
+        return std::nullopt;
+}
+
 bool TextureLoader::update_texture(Texture &tex, const std::string &path,
                                    GLenum target, GLenum internal_format,
                                    bool srgb) {
@@ -49,6 +61,23 @@ bool TextureLoader::update_texture(Texture &tex, const std::string &path,
         else if (target == GL_TEXTURE_2D)
             tex.generate(width, height, tex.internal_format, format,
                          GL_UNSIGNED_BYTE, data);
+        stbi_image_free(data);
+    } else {
+        stbi_image_free(data);
+        return false;
+    }
+    tex.width = width;
+    tex.height = height;
+
+    return true;
+}
+
+bool TextureLoader::update_hdr_texture(Texture &tex, const std::string &path) {
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, nrComponents;
+    float *data = stbi_loadf(path.c_str(), &width, &height, &nrComponents, 0);
+    if (data) {
+        tex.generate(width, height, GL_RGB16F, GL_FLOAT, data);
         stbi_image_free(data);
     } else {
         stbi_image_free(data);

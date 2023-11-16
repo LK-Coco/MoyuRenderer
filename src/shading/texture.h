@@ -18,7 +18,8 @@ public:
     GLenum wrap_s = GL_REPEAT;
     GLenum wrap_t = GL_REPEAT;
     GLenum wrap_r = GL_REPEAT;
-    bool mipmapping = true;
+    bool mipmapping = false;
+    bool is_hdr = false;
 
     unsigned int width = 0;
     unsigned int height = 0;
