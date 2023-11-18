@@ -25,7 +25,7 @@ public:
          std::vector<Texture> textures);
     ~Mesh() = default;
 
-    void draw(std::shared_ptr<Material>& mat);
+    void draw();
     void init();
 
 private:

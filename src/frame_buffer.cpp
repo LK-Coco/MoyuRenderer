@@ -20,21 +20,32 @@ FrameBuffer::FrameBuffer(int width, int height, bool bind_tex) {
                                GL_TEXTURE_2D, texture_id_, 0);
     }
 
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width,
+    glGenRenderbuffers(1, &rbo_);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo_);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width,
                           height);  // use a single renderbuffer object for both
                                     // a depth AND stencil buffer.
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                               GL_RENDERBUFFER,
-                              rbo);  // now actually attach it
+                              rbo_);  // now actually attach it
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
                   << std::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+FrameBuffer::~FrameBuffer() {
+    glDeleteFramebuffers(1, &fbo_);
+    glDeleteRenderbuffers(1, &rbo_);
+    glDeleteTextures(1, &texture_id_);
+}
+
+void FrameBuffer::resize(int width, int height) {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo_);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
 }
 
 void FrameBuffer::bind() { glBindFramebuffer(GL_FRAMEBUFFER, fbo_); }

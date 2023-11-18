@@ -32,8 +32,8 @@ void BlinnMaterial::fill_unifrom() {
     shader_->use();
     shader_->set_mat4("projection", projection);
     shader_->set_mat4("view", view);
-    shader_->set_vec3("light_pos", Scene::point_light->position);
-    shader_->set_vec4("light_color", Scene::point_light->color);
+    shader_->set_vec3("light_pos", Scene::point_light[0].position);
+    shader_->set_vec3("light_color", Scene::point_light[0].color);
     shader_->set_vec3("view_pos", Scene::camera->position);
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));

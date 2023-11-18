@@ -6,9 +6,7 @@ namespace MR {
 
 Rasterizer::Rasterizer()
     : fbo_(FrameBuffer(Scene::width, Scene::height, true)) {
-    skybox_ = Skybox();
-    std::string skybox_map_path = "assets/Skybox/Lake/";
-    skybox_.init(skybox_map_path);
+    // std::string skybox_map_path = "assets/Skybox/Lake/";
 }
 
 void Rasterizer::render(std::shared_ptr<Object>& object,
@@ -18,15 +16,15 @@ void Rasterizer::render(std::shared_ptr<Object>& object,
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0f, 0.0f, 0.9f, 1.0f);
 
-    object->render(mat);
+    object->render();
 
     fbo_.unbind();
 }
 
-void Rasterizer::render_skybox() {
+void Rasterizer::render_skybox(std::shared_ptr<Skybox>& skybox) {
     fbo_.bind();
 
-    skybox_.draw();
+    skybox->draw();
 
     fbo_.unbind();
 }

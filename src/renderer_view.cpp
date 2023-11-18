@@ -10,12 +10,14 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include "glad/glad.h"
-#include "model.h"
-#include "cube.h"
+#include "object/model.h"
+#include "object/cube.h"
+#include "object/sphere.h"
 #include "rasterizer.h"
 #include "shading/pbr_material.h"
 #include "shading/blinn_material.h"
 #include "utility.h"
+#include "resources/resources.h"
 
 namespace MR {
 
@@ -104,30 +106,67 @@ void RendererView::init(int width, int height) {
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 450");
 
-    Scene::model =
-        // std::make_shared<Model>("assets/AfricanHead/african_head.obj");
-        std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
+    Scene::model = std::make_shared<Sphere>();
+    // std::make_shared<Model>("assets/AfricanHead/african_head.obj");
+    // std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
+    // std::make_shared<Model>("assets/Cerberus/Cerberus_LP.FBX");
+
+    // 设置灯光
+    Scene::point_light.push_back(
+        {glm::vec3(300.0f, 0.0f, 0.0f), glm::vec3(0, 0, 5.0f)});
+    Scene::point_light.push_back(
+        {glm::vec3(0.0f, 300.0f, 0.0f), glm::vec3(-5.0f, 0, 3.0f)});
+    Scene::point_light.push_back(
+        {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(5.0f, 0, 1.0f)});
+    Scene::point_light.push_back(
+        {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(0, 0, -5.0f)});
+
+    // 预处理hdr环境贴图
+    auto fbo = FrameBuffer(512, 512, false);
+
+    // 加载hdr环境贴图
+    auto hdr_tex = Resources::load_hdr_texture("hdr_env_map",
+                                               "assets/hdr/newport_loft.hdr");
+    // 将hdr环境贴图转换为环境立方体贴图
+    env_map_to_cubemap_shader_ = std::make_shared<Shader>(
+        "assets/shaders/pbr/environment_map_to_cubemap.vs",
+        "assets/shaders/pbr/environment_map_to_cubemap.fs");
+    auto hdr_cubemap = Resources::environment_map_to_cubemap(
+        "hdr_cubemap", hdr_tex, env_map_to_cubemap_shader_, fbo);
+
+    // 从环境立方体贴图计算出辐照度图
+    auto env_cubemap_to_irradiance_map_shader_ = std::make_shared<Shader>(
+        "assets/shaders/pbr/env_cubemap_to_irradiance_map.vs",
+        "assets/shaders/pbr/env_cubemap_to_irradiance_map.fs");
+    auto irradiance_map = Resources::env_cubemap_to_irradiance_map(
+        "irradiance_map", hdr_cubemap, env_cubemap_to_irradiance_map_shader_,
+        fbo);
+
+    // 从环境立方体贴图计算出预滤波hdr环境贴图
+    auto env_cubemap_to_prefilter_map_shader_ = std::make_shared<Shader>(
+        "assets/shaders/pbr/env_cubemap_to_prefilter_map.vs",
+        "assets/shaders/pbr/env_cubemap_to_prefilter_map.fs");
+    auto prefilter_map = Resources::env_cubemap_to_prefilter_map(
+        "prefilter_map", hdr_cubemap, env_cubemap_to_prefilter_map_shader_,
+        fbo);
+
+    // 计算出BRDF的LUT图
+    auto brdf_lut_shader_ = std::make_shared<Shader>(
+        "assets/shaders/pbr/brdf_lut.vs", "assets/shaders/pbr/brdf_lut.fs");
+    auto brdf_lut =
+        Resources::clac_brdf_lut("brdf_lut_map", brdf_lut_shader_, fbo);
+
+    // 设置天空盒
+    skybox_shader_ = std::make_shared<Shader>(
+        "assets/shaders/skybox/skybox.vs", "assets/shaders/skybox/skybox.fs");
+    Scene::skybox = std::make_shared<Skybox>();
+    Scene::skybox->init();
+    Scene::skybox->set_map(hdr_cubemap);
+    // 设置Material
     cur_material_ = 1;
-    // auto pbr = (PBRMaterial*)obj_mat_.get();
-    // pbr->set_shader(obj_shader_.get());
-    // pbr->set_maps("assets/DamagedHelmet/Default_albedo.jpg",
-    //               "assets/DamagedHelmet/Default_normal.jpg",
-    //               "assets/DamagedHelmet/Default_metalRoughness.jpg",
-    //               "assets/DamagedHelmet/Default_metalRoughness.jpg",
-    //               "assets/DamagedHelmet/Default_AO.jpg");
     switch_material();
 
     renderer_ = std::make_shared<Rasterizer>();
-
-    skybox_shader_ = std::make_shared<Shader>(
-        "assets/shaders/skybox/skybox.vs", "assets/shaders/skybox/skybox.fs");
-
-    environment_map_to_cubemap_shader_ = std::make_shared<Shader>(
-        "assets/shaders/pbr/environment_map_to_cubemap.vs",
-        "assets/shaders/pbr/environment_map_to_cubemap.fs");
-
-    Scene::point_light = std::make_shared<PointLight>(
-        glm::vec4(0.9f, 0.8f, 0.8f, 1), glm::vec3(1, 1, 3));
 
     std::cout << "init view ok!" << std::endl;
 }
@@ -147,39 +186,20 @@ void RendererView::run() {
         process_input(window_, target_frame_time_);
 
         glm::mat4 projection = glm::perspective(
-            glm::radians(60.f), (float)Scene::width / (float)Scene::height,
-            0.1f, 100.0f);
+            glm::radians(Scene::camera->get_zoom()),
+            (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
         glm::mat4 view = Scene::camera->get_view_mat();
-
-        // TODO 待优化mat的使用
-        // auto shader = obj_mat_->get_shader();
-        // shader->use();
-        // shader->set_mat4("projection", projection);
-        // shader->set_mat4("view", view);
-        // glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        // shader->set_mat4("model", model);
-        // shader->set_mat3("normalMatrix",
-        //                  glm::transpose(glm::inverse(glm::mat3(model))));
-        // shader->set_vec3("camPos", Scene::camera->position);
-        // for (int i = 0; i < 4; i++) {
-        //     shader->set_vec3("lightPositions[" + std::to_string(i) + "]",
-        //                      Scene::point_light->position);
-        //     shader->set_vec4("lightColors[" + std::to_string(i) + "]",
-        //                      Scene::point_light->color);
-        // }
 
         obj_mat_->fill_unifrom();
 
         renderer_->render(Scene::model, obj_mat_);
 
         // 天空盒
-        view = glm::mat4(glm::mat3(view));  // 移除translation参数
+        // view = glm::mat4(glm::mat3(view));  // 移除translation参数
         skybox_shader_->use();
         skybox_shader_->set_mat4("projection", projection);
         skybox_shader_->set_mat4("view", view);
-        renderer_->render_skybox();
+        renderer_->render_skybox(Scene::skybox);
 
         // 开始ImGui框架新的帧
         ImGui_ImplOpenGL3_NewFrame();
@@ -217,7 +237,7 @@ void RendererView::load_model(std::string& file_path) {
 void RendererView::render_main_side(const GLuint& image) {
     ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_None);
     ImGui::SetNextWindowSize(
-        ImVec2(GLfloat(Scene::width * 0.8f), GLfloat(Scene::height)),
+        ImVec2(GLfloat(Scene::width * 0.8f), GLfloat(Scene::height * 0.8f)),
         ImGuiCond_None);
     {
         ImGui::Begin("Main", NULL,
@@ -299,11 +319,14 @@ void RendererView::switch_material() {
         obj_mat_->set_shader(obj_shader_.get());
 
         auto pbr = (PBRMaterial*)obj_mat_.get();
-        pbr->set_maps("assets/DamagedHelmet/Default_albedo.jpg",
-                      "assets/DamagedHelmet/Default_normal.jpg",
-                      "assets/DamagedHelmet/Default_metalRoughness.jpg",
-                      "assets/DamagedHelmet/Default_metalRoughness.jpg",
-                      "assets/DamagedHelmet/Default_AO.jpg");
+        // pbr->set_maps("assets/DamagedHelmet/Default_albedo.jpg",
+        //               "assets/DamagedHelmet/Default_normal.jpg",
+        //               "assets/DamagedHelmet/Default_metalRoughness.jpg",
+        //               "assets/DamagedHelmet/Default_metalRoughness.jpg",
+        //               "assets/DamagedHelmet/Default_AO.jpg");
+        pbr->set_maps("assets/gold/albedo.png", "assets/gold/normal.png",
+                      "assets/gold/metallic.png", "assets/gold/roughness.png",
+                      "assets/gold/ao.png");
     }
 }
 

@@ -18,7 +18,7 @@ public:
     GLenum wrap_s = GL_REPEAT;
     GLenum wrap_t = GL_REPEAT;
     GLenum wrap_r = GL_REPEAT;
-    bool mipmapping = false;
+    bool mipmapping = true;
     bool is_hdr = false;
 
     unsigned int width = 0;
@@ -28,15 +28,15 @@ public:
     Texture(){};
     ~Texture(){};
 
-    void generate(unsigned int w, GLenum internal_format, GLenum format,
-                  GLenum type, void* data);
+    void generate_1d(unsigned int w, GLenum internal_format, GLenum format,
+                     GLenum type, void* data);
 
-    void generate(unsigned int w, unsigned int h, GLenum internal_format,
-                  GLenum format, GLenum type, void* data);
+    void generate_2d(unsigned int w, unsigned int h, GLenum internal_format,
+                     GLenum format, GLenum type, void* data);
 
-    void generate(unsigned int w, unsigned int h, unsigned int d,
-                  GLenum internal_format, GLenum format, GLenum type,
-                  void* data);
+    void generate_3d(unsigned int w, unsigned int h, unsigned int d,
+                     GLenum internal_format, GLenum format, GLenum type,
+                     void* data);
 
     void resize(unsigned int w, unsigned int h = 0, unsigned int d = 0);
 

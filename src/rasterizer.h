@@ -12,13 +12,12 @@ public:
     void render(std::shared_ptr<Object>& object,
                 std::shared_ptr<Material>& mat) override;
 
-    void render_skybox() override;
+    void render_skybox(std::shared_ptr<Skybox>& skybox) override;
 
     GLuint get_image_id() const override;
 
 private:
     FrameBuffer fbo_;
-    Skybox skybox_;
 };
 
 }  // namespace MR

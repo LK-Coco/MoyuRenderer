@@ -30,22 +30,16 @@ public:
     void on_process_mouse_scroll(float scroll) {
         zoom_ -= (float)scroll;
         if (zoom_ < 1.0f) zoom_ = 1.0f;
-        if (zoom_ > 99.0f) zoom_ = 99.0f;
+        if (zoom_ > 45.0f) zoom_ = 45.0f;
     }
 
     void on_process_mouse_move(float x_offset, float y_offset) {
         // TODO 重构：四元数的旋转
         yaw += x_offset * 0.5f;
         pitch += y_offset * 0.5f;
-        pitch = glm::clamp(pitch, -88.0f, 89.0f);
+        pitch = glm::clamp(pitch, -89.0f, 89.0f);
         if (yaw > 360.f) yaw -= 360.f;
         if (yaw < -360.f) yaw += 360.f;
-
-        // float n = glm::cos(glm::radians(pitch)) * zoom_;
-
-        // position.x = glm::cos(glm::radians(yaw)) * n;
-        // position.y = glm::sin(glm::radians(pitch)) * zoom_;
-        // position.z = glm::sin(glm::radians(yaw)) * n;
 
         update();
     }

@@ -2,8 +2,8 @@
 
 namespace MR {
 
-void Texture::generate(unsigned int w, GLenum internal_format, GLenum format,
-                       GLenum type, void* data) {
+void Texture::generate_1d(unsigned int w, GLenum internal_format, GLenum format,
+                          GLenum type, void* data) {
     glGenTextures(1, &id);
 
     width = w;
@@ -22,8 +22,9 @@ void Texture::generate(unsigned int w, GLenum internal_format, GLenum format,
     unbind();
 }
 
-void Texture::generate(unsigned int w, unsigned int h, GLenum internal_format,
-                       GLenum format, GLenum type, void* data) {
+void Texture::generate_2d(unsigned int w, unsigned int h,
+                          GLenum internal_format, GLenum format, GLenum type,
+                          void* data) {
     glGenTextures(1, &id);
 
     width = w;
@@ -41,12 +42,12 @@ void Texture::generate(unsigned int w, unsigned int h, GLenum internal_format,
     glTexParameteri(target, GL_TEXTURE_WRAP_S, wrap_s);
     glTexParameteri(target, GL_TEXTURE_WRAP_T, wrap_t);
     if (mipmapping) glGenerateMipmap(target);
-    unbind();
+    // unbind();
 }
 
-void Texture::generate(unsigned int w, unsigned int h, unsigned int d,
-                       GLenum internal_format, GLenum format, GLenum type,
-                       void* data) {
+void Texture::generate_3d(unsigned int w, unsigned int h, unsigned int d,
+                          GLenum internal_format, GLenum format, GLenum type,
+                          void* data) {
     glGenTextures(1, &id);
 
     width = w;
@@ -117,37 +118,5 @@ void Texture::set_filter_max(GLenum filter, bool is_bind) {
     if (is_bind) bind();
     glTexParameteri(target, GL_TEXTURE_MAG_FILTER, filter);
 }
-
-// void Texture::load(const char* file_path) {
-//     id = -1;
-//     glGenTextures(1, &id);
-
-//     int width, height, nr_comp;
-//     unsigned char* data = stbi_load(file_path, &width, &height, &nr_comp, 0);
-//     if (data) {
-//         GLenum format = NULL;
-//         if (nr_comp == 1)
-//             format = GL_RED;
-//         else if (nr_comp == 3)
-//             format = GL_RGB;
-//         else if (nr_comp == 4)
-//             format = GL_RGBA;
-
-//         glBindTexture(GL_TEXTURE_2D, id);
-//         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
-//         GL_UNSIGNED_BYTE, data); glGenerateMipmap(GL_TEXTURE_2D);
-
-//         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-//                         format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-//         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-//                         format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-//         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-//         GL_LINEAR_MIPMAP_LINEAR); glTexParameteri(GL_TEXTURE_2D,
-//         GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-//         std::cout << "Texture load ok! " << file_path << path << std::endl;
-//     }
-//     stbi_image_free(data);
-// }
 
 }  // namespace MR

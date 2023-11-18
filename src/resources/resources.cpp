@@ -6,7 +6,8 @@
 #include "glm/glm.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
-#include "cube.h"
+#include "object/cube.h"
+#include "object/quad.h"
 
 namespace MR {
 
@@ -67,18 +68,20 @@ TextureCube* Resources::load_texture_cube(const std::string& name,
 }
 
 TextureCube* Resources::environment_map_to_cubemap(
-    const std::string& name, Texture* tex, std::shared_ptr<Shader>& shader) {
+    const std::string& name, Texture* tex, std::shared_ptr<Shader>& shader,
+    FrameBuffer& fbo) {
     unsigned int id = SHASH(name);
 
-    auto fbo = FrameBuffer(512, 512, false);
     TextureCube cube_tex;
+    cube_tex.filter_min = GL_LINEAR_MIPMAP_LINEAR;
     cube_tex.generate_texture_id();
+    cube_tex.bind();
     cube_tex.generate_empty_face(512, 512, GL_RGB16F, GL_RGB, GL_FLOAT,
                                  nullptr);
 
-    glm::mat4 captureProjection =
+    glm::mat4 capture_projection =
         glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-    glm::mat4 captureViews[] = {
+    glm::mat4 capture_views[] = {
         glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, -1.0f, 0.0f)),
         glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f),
@@ -94,27 +97,181 @@ TextureCube* Resources::environment_map_to_cubemap(
 
     shader->use();
     shader->set_int("equirectangularMap", 0);
-    shader->set_mat4("projection", captureProjection);
+    shader->set_mat4("projection", capture_projection);
 
     tex->bind(0);
     glViewport(0, 0, 512, 512);
     fbo.bind();
     Cube cube;
-    std::shared_ptr<Material> mat = nullptr;
+
     for (unsigned int i = 0; i < 6; ++i) {
-        shader->set_mat4("view", captureViews[i]);
+        shader->set_mat4("view", capture_views[i]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cube_tex.id,
                                0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        cube.render(mat);  // renders a 1x1 cube
+        cube.render();  // renders a 1x1 cube
     }
+
+    cube_tex.gen_mipmap();
+
     fbo.unbind();
 
     textures_cube_[id] = cube_tex;
 
     return &textures_cube_[id];
+}
+
+TextureCube* Resources::env_cubemap_to_irradiance_map(
+    const std::string& name, TextureCube* tex, std::shared_ptr<Shader>& shader,
+    FrameBuffer& fbo) {
+    unsigned int id = SHASH(name);
+
+    fbo.resize(32, 32);
+
+    TextureCube irradiance_map;
+    irradiance_map.generate_texture_id();
+    irradiance_map.bind();
+    irradiance_map.generate_empty_face(32, 32, GL_RGB16F, GL_RGB, GL_FLOAT,
+                                       nullptr);
+
+    glm::mat4 capture_projection =
+        glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    glm::mat4 capture_views[] = {
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
+                    glm::vec3(0.0f, 0.0f, 1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f),
+                    glm::vec3(0.0f, 0.0f, -1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f))};
+
+    shader->use();
+    shader->set_int("environmentMap", 0);
+    shader->set_mat4("projection", capture_projection);
+    tex->bind(0);
+
+    glViewport(0, 0, 32, 32);  // don't forget to configure the viewport to
+    Cube cube;
+
+    fbo.bind();
+    for (unsigned int i = 0; i < 6; ++i) {
+        shader->set_mat4("view", capture_views[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                               GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                               irradiance_map.id, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        cube.render();
+    }
+    fbo.unbind();
+
+    textures_cube_[id] = irradiance_map;
+
+    return &textures_cube_[id];
+}
+
+TextureCube* Resources::env_cubemap_to_prefilter_map(
+    const std::string& name, TextureCube* env_cubemap,
+    std::shared_ptr<Shader>& shader, FrameBuffer& fbo) {
+    unsigned int id = SHASH(name);
+
+    TextureCube prefilter_map;
+    prefilter_map.filter_min = GL_LINEAR_MIPMAP_LINEAR;
+    prefilter_map.generate_texture_id();
+    prefilter_map.bind();
+    prefilter_map.generate_empty_face(128, 128, GL_RGB16F, GL_RGB, GL_FLOAT,
+                                      nullptr);
+    prefilter_map.gen_mipmap();
+
+    glm::mat4 capture_projection =
+        glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    glm::mat4 capture_views[] = {
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
+                    glm::vec3(0.0f, 0.0f, 1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f),
+                    glm::vec3(0.0f, 0.0f, -1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f))};
+
+    shader->use();
+    shader->set_int("environmentMap", 0);
+    shader->set_mat4("projection", capture_projection);
+    env_cubemap->bind(0);
+
+    fbo.bind();
+    unsigned int maxMipLevels = 5;
+    Cube cube;
+    for (unsigned int mip = 0; mip < maxMipLevels; ++mip) {
+        // reisze framebuffer according to mip-level size.
+        unsigned int mipWidth = 128 * std::pow(0.5, mip);
+        unsigned int mipHeight = 128 * std::pow(0.5, mip);
+        glBindRenderbuffer(GL_RENDERBUFFER, fbo.get_rbo_id());
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth,
+                              mipHeight);
+        glViewport(0, 0, mipWidth, mipHeight);
+
+        float roughness = (float)mip / (float)(maxMipLevels - 1);
+        shader->set_float("roughness", roughness);
+        for (unsigned int i = 0; i < 6; ++i) {
+            shader->set_mat4("view", capture_views[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                                   prefilter_map.id, mip);
+
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            cube.render();
+        }
+    }
+
+    fbo.unbind();
+
+    textures_cube_[id] = prefilter_map;
+    return &textures_cube_[id];
+}
+
+Texture* Resources::clac_brdf_lut(const std::string& name,
+                                  std::shared_ptr<Shader>& shader,
+                                  FrameBuffer& fbo) {
+    unsigned int id = SHASH(name);
+
+    Texture lut_tex;
+    lut_tex.mipmapping = false;
+    lut_tex.filter_min = GL_LINEAR;
+    lut_tex.wrap_s = GL_CLAMP_TO_EDGE;
+    lut_tex.wrap_t = GL_CLAMP_TO_EDGE;
+    lut_tex.generate_2d(512, 512, GL_RG16F, GL_RG, GL_FLOAT, nullptr);
+    // lut_tex.bind();
+    //  then re-configure capture framebuffer object and render screen-space
+    //  quad with BRDF shader.
+    fbo.bind();
+    glBindRenderbuffer(GL_RENDERBUFFER, fbo.get_rbo_id());
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           lut_tex.id, 0);
+
+    glViewport(0, 0, 512, 512);
+    shader->use();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    Quad quad;
+    quad.render();
+
+    fbo.unbind();
+
+    textures_[id] = lut_tex;
+    return &textures_[id];
 }
 
 Texture* Resources::get_texture(const std::string& name) {

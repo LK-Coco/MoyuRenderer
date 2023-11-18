@@ -51,7 +51,7 @@ void Mesh::init() {
     glBindVertexArray(0);
 }
 
-void Mesh::draw(std::shared_ptr<Material> &mat) {
+void Mesh::draw() {
     glBindVertexArray(vao_);
     glDrawElements(GL_TRIANGLES, GLsizei(indices_.size()), GL_UNSIGNED_INT, 0);
 

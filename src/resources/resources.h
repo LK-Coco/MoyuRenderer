@@ -5,6 +5,7 @@
 #include "shading/shader.h"
 #include "shading/texture.h"
 #include "shading/texture_cube.h"
+#include "frame_buffer.h"
 
 namespace MR {
 
@@ -22,7 +23,20 @@ public:
                                           const std::string& folder);
 
     static TextureCube* environment_map_to_cubemap(
-        const std::string& name, Texture* tex, std::shared_ptr<Shader>& shader);
+        const std::string& name, Texture* tex, std::shared_ptr<Shader>& shader,
+        FrameBuffer& fbo);
+
+    static TextureCube* env_cubemap_to_irradiance_map(
+        const std::string& name, TextureCube* tex,
+        std::shared_ptr<Shader>& shader, FrameBuffer& fbo);
+
+    static TextureCube* env_cubemap_to_prefilter_map(
+        const std::string& name, TextureCube* env_cubemap,
+        std::shared_ptr<Shader>& shader, FrameBuffer& fbo);
+
+    static Texture* clac_brdf_lut(const std::string& name,
+                                  std::shared_ptr<Shader>& shader,
+                                  FrameBuffer& fbo);
 
     static Texture* get_texture(const std::string& name);
 

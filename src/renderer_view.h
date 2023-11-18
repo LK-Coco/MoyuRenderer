@@ -32,7 +32,7 @@ private:
     int cur_material_ = 0;
 
     std::shared_ptr<Shader> skybox_shader_;
-    std::shared_ptr<Shader> environment_map_to_cubemap_shader_;
+    std::shared_ptr<Shader> env_map_to_cubemap_shader_;
 
     // Camera camera_{glm::vec3(0.f, 0.f, 15.f), glm::vec3(0.f, 0.f, 0.f)};
 

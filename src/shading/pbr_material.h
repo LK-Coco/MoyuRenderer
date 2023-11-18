@@ -3,6 +3,7 @@
 #include <string.h>
 #include "material.h"
 #include "texture.h"
+#include "texture_cube.h"
 
 namespace MR {
 
@@ -30,6 +31,9 @@ private:
     Texture* metallic_map_;
     Texture* roughness_map_;
     Texture* ao_map_;
+    TextureCube* irradiance_map_;
+    TextureCube* prefilter_map_;
+    Texture* lut_map_;
 };
 
 }  // namespace MR

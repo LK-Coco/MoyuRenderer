@@ -34,6 +34,8 @@ public:
                              GLenum internal_format, GLenum format, GLenum type,
                              unsigned char* data);
 
+    void gen_mipmap();
+
     void set_mip_face(GLenum face, unsigned int width, unsigned int height,
                       GLenum format, GLenum type, unsigned int mip_level,
                       unsigned char* data);

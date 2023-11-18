@@ -33,11 +33,11 @@ void TextureCube::generate_empty_face(unsigned int width, unsigned int height,
     this->format = format;
     this->type = type;
 
-    bind();
+    // bind();
     for (unsigned int i = 0; i < 6; ++i) {
         // note that we store each face with 16 bit floating point values
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internal_format,
-                     512, 512, 0, format, type, data);
+                     width, height, 0, format, type, data);
     }
 
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, filter_min);
@@ -50,7 +50,7 @@ void TextureCube::generate_empty_face(unsigned int width, unsigned int height,
 void TextureCube::set_mip_face(GLenum face, unsigned int width,
                                unsigned int height, GLenum format, GLenum type,
                                unsigned int mip_level, unsigned char* data) {
-    bind();
+    // bind();
     glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, mip_level, 0, 0,
                     width, height, format, type, data);
 }
@@ -59,11 +59,12 @@ void TextureCube::resize(unsigned int width, unsigned int height) {
     face_width = width;
     face_height = height;
 
-    bind();
     for (unsigned int i = 0; i < 6; ++i)
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width,
                      height, 0, format, type, nullptr);
 }
+
+void TextureCube::gen_mipmap() { glGenerateMipmap(GL_TEXTURE_CUBE_MAP); }
 
 void TextureCube::bind(int unit) {
     if (unit >= 0) glActiveTexture(GL_TEXTURE0 + unit);

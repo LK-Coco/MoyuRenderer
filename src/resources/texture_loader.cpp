@@ -33,6 +33,7 @@ std::optional<Texture> TextureLoader::load_hdr_texture(
     Texture texture;
     texture.target = GL_TEXTURE_2D;
     texture.internal_format = GL_RGB16F;
+    texture.is_hdr = true;
 
     if (update_hdr_texture(texture, path))
         return texture;
@@ -44,6 +45,7 @@ bool TextureLoader::update_texture(Texture &tex, const std::string &path,
                                    GLenum target, GLenum internal_format,
                                    bool srgb) {
     int width, height, nr_components;
+    // stbi_set_flip_vertically_on_load(true);
     unsigned char *data =
         stbi_load(path.c_str(), &width, &height, &nr_components, 0);
     if (data) {
@@ -56,11 +58,11 @@ bool TextureLoader::update_texture(Texture &tex, const std::string &path,
             format = GL_RGBA;
 
         if (target == GL_TEXTURE_1D)
-            tex.generate(width, tex.internal_format, format, GL_UNSIGNED_BYTE,
-                         data);
+            tex.generate_1d(width, tex.internal_format, format,
+                            GL_UNSIGNED_BYTE, data);
         else if (target == GL_TEXTURE_2D)
-            tex.generate(width, height, tex.internal_format, format,
-                         GL_UNSIGNED_BYTE, data);
+            tex.generate_2d(width, height, tex.internal_format, format,
+                            GL_UNSIGNED_BYTE, data);
         stbi_image_free(data);
     } else {
         stbi_image_free(data);
@@ -77,7 +79,7 @@ bool TextureLoader::update_hdr_texture(Texture &tex, const std::string &path) {
     int width, height, nrComponents;
     float *data = stbi_loadf(path.c_str(), &width, &height, &nrComponents, 0);
     if (data) {
-        tex.generate(width, height, GL_RGB16F, GL_FLOAT, data);
+        tex.generate_2d(width, height, GL_RGB16F, GL_RGB, GL_FLOAT, data);
         stbi_image_free(data);
     } else {
         stbi_image_free(data);
