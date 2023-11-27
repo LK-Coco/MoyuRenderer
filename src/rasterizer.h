@@ -18,6 +18,8 @@ public:
 
 private:
     FrameBuffer fbo_;
+    Texture fbo_color_tex_;
+    RenderBuffer rbo_;
 };
 
 }  // namespace MR

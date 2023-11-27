@@ -28,15 +28,15 @@ public:
 
     static TextureCube* env_cubemap_to_irradiance_map(
         const std::string& name, TextureCube* tex,
-        std::shared_ptr<Shader>& shader, FrameBuffer& fbo);
+        std::shared_ptr<Shader>& shader, FrameBuffer& fbo, RenderBuffer& rbo);
 
     static TextureCube* env_cubemap_to_prefilter_map(
         const std::string& name, TextureCube* env_cubemap,
-        std::shared_ptr<Shader>& shader, FrameBuffer& fbo);
+        std::shared_ptr<Shader>& shader, FrameBuffer& fbo, RenderBuffer& rbo);
 
     static Texture* clac_brdf_lut(const std::string& name,
                                   std::shared_ptr<Shader>& shader,
-                                  FrameBuffer& fbo);
+                                  FrameBuffer& fbo, RenderBuffer& rbo);
 
     static Texture* get_texture(const std::string& name);
 

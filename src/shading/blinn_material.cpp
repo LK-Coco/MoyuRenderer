@@ -12,7 +12,7 @@ namespace MR {
 
 void BlinnMaterial::set_diffuse_map(const std::string& file_path) {
     diffuse_map_ = Resources::load_texture("texture_diffuse0", file_path);
-
+    shader_->use();
     shader_->set_int("texture_diffuse0", 0);
 }
 

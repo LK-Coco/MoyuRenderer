@@ -122,7 +122,8 @@ void RendererView::init(int width, int height) {
         {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(0, 0, -5.0f)});
 
     // 预处理hdr环境贴图
-    auto fbo = FrameBuffer(512, 512, false);
+    auto fbo = FrameBuffer();
+    auto rbo = RenderBuffer();
 
     // 加载hdr环境贴图
     auto hdr_tex = Resources::load_hdr_texture("hdr_env_map",
@@ -140,21 +141,21 @@ void RendererView::init(int width, int height) {
         "assets/shaders/pbr/env_cubemap_to_irradiance_map.fs");
     auto irradiance_map = Resources::env_cubemap_to_irradiance_map(
         "irradiance_map", hdr_cubemap, env_cubemap_to_irradiance_map_shader_,
-        fbo);
+        fbo, rbo);
 
     // 从环境立方体贴图计算出预滤波hdr环境贴图
     auto env_cubemap_to_prefilter_map_shader_ = std::make_shared<Shader>(
         "assets/shaders/pbr/env_cubemap_to_prefilter_map.vs",
         "assets/shaders/pbr/env_cubemap_to_prefilter_map.fs");
     auto prefilter_map = Resources::env_cubemap_to_prefilter_map(
-        "prefilter_map", hdr_cubemap, env_cubemap_to_prefilter_map_shader_,
-        fbo);
+        "prefilter_map", hdr_cubemap, env_cubemap_to_prefilter_map_shader_, fbo,
+        rbo);
 
     // 计算出BRDF的LUT图
     auto brdf_lut_shader_ = std::make_shared<Shader>(
         "assets/shaders/pbr/brdf_lut.vs", "assets/shaders/pbr/brdf_lut.fs");
     auto brdf_lut =
-        Resources::clac_brdf_lut("brdf_lut_map", brdf_lut_shader_, fbo);
+        Resources::clac_brdf_lut("brdf_lut_map", brdf_lut_shader_, fbo, rbo);
 
     // 设置天空盒
     skybox_shader_ = std::make_shared<Shader>(
