@@ -4,9 +4,8 @@
 
 namespace MR {
 
-Rasterizer::Rasterizer() {
-    fbo_color_tex_.generate_2d(Scene::width, Scene::height, GL_RGB, GL_RGB,
-                               GL_UNSIGNED_BYTE, NULL);
+Rasterizer::Rasterizer() : fbo_color_tex_(GL_TEXTURE_2D) {
+    fbo_color_tex_.set_storage_2d(0, GL_RGB, Scene::width, Scene::height);
 
     rbo_.set_storage(GL_DEPTH_ATTACHMENT, Scene::width, Scene::height);
 
@@ -33,6 +32,6 @@ void Rasterizer::render_skybox(std::shared_ptr<Skybox>& skybox) {
     fbo_.unbind();
 }
 
-GLuint Rasterizer::get_image_id() const { return fbo_color_tex_.id; }
+GLuint Rasterizer::get_image_id() const { return fbo_color_tex_.get_id(); }
 
 }  // namespace MR

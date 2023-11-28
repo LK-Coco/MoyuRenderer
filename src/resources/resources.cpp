@@ -6,6 +6,7 @@
 #include "glm/glm.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
+#include <utility>
 #include "object/cube.h"
 #include "object/quad.h"
 
@@ -27,7 +28,7 @@ Texture* Resources::load_texture(const std::string& name,
 
     auto tex = TextureLoader::load_texture(path, target, format);
     if (tex.has_value()) {
-        textures_[id] = tex.value();
+        textures_[id] = std::move(tex.value());
         return &textures_[id];
     }
 
@@ -245,12 +246,13 @@ Texture* Resources::clac_brdf_lut(const std::string& name,
                                   FrameBuffer& fbo, RenderBuffer& rbo) {
     unsigned int id = SHASH(name);
 
-    Texture lut_tex;
-    lut_tex.mipmapping = false;
-    lut_tex.filter_min = GL_LINEAR;
-    lut_tex.wrap_s = GL_CLAMP_TO_EDGE;
-    lut_tex.wrap_t = GL_CLAMP_TO_EDGE;
-    lut_tex.generate_2d(512, 512, GL_RG16F, GL_RG, GL_FLOAT, nullptr);
+    Texture lut_tex(GL_TEXTURE_2D);
+    lut_tex.set_storage_2d(0, GL_RG16F, 512, 512);
+    lut_tex.set_sub_image_2d(0, 0, 0, 512, 512, GL_RG, GL_FLOAT, nullptr);
+    lut_tex.set(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    lut_tex.set(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    lut_tex.set(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
     // lut_tex.bind();
     //  then re-configure capture framebuffer object and render screen-space
     //  quad with BRDF shader.

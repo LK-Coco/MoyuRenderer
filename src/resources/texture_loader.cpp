@@ -10,19 +10,18 @@ std::optional<Texture> TextureLoader::load_texture(const std::string &path,
                                                    GLenum target,
                                                    GLenum internal_format,
                                                    bool srgb) {
-    Texture texture;
-    texture.target = target;
-    texture.internal_format = internal_format;
-    if (texture.internal_format == GL_RGB || texture.internal_format == GL_SRGB)
-        texture.internal_format = srgb ? GL_SRGB : GL_RGB;
-    if (texture.internal_format == GL_RGBA ||
-        texture.internal_format == GL_SRGB_ALPHA)
-        texture.internal_format = srgb ? GL_SRGB_ALPHA : GL_RGBA;
+    Texture texture(target);
+
+    // if (texture.internal_format == GL_RGB || texture.internal_format ==
+    // GL_SRGB)
+    //     texture.internal_format = srgb ? GL_SRGB : GL_RGB;
+    // if (texture.internal_format == GL_RGBA ||
+    //     texture.internal_format == GL_SRGB_ALPHA)
+    //     texture.internal_format = srgb ? GL_SRGB_ALPHA : GL_RGBA;
 
     // flip textures on their y coordinate while loading
     // stbi_set_flip_vertically_on_load(true);
-    if (update_texture(texture, path, texture.target, texture.internal_format,
-                       srgb))
+    if (update_texture(texture, path, target, texture.internal_format, srgb))
         return texture;
     else
         return std::nullopt;
@@ -30,8 +29,7 @@ std::optional<Texture> TextureLoader::load_texture(const std::string &path,
 
 std::optional<Texture> TextureLoader::load_hdr_texture(
     const std::string &path) {
-    Texture texture;
-    texture.target = GL_TEXTURE_2D;
+    Texture texture(GL_TEXTURE_2D);
     texture.internal_format = GL_RGB16F;
     texture.is_hdr = true;
 
@@ -57,12 +55,14 @@ bool TextureLoader::update_texture(Texture &tex, const std::string &path,
         else if (nr_components == 4)
             format = GL_RGBA;
 
-        if (target == GL_TEXTURE_1D)
-            tex.generate_1d(width, tex.internal_format, format,
-                            GL_UNSIGNED_BYTE, data);
-        else if (target == GL_TEXTURE_2D)
-            tex.generate_2d(width, height, tex.internal_format, format,
-                            GL_UNSIGNED_BYTE, data);
+        if (target == GL_TEXTURE_1D) {
+            tex.set_storage_1d(0, internal_format, width);
+            tex.set_sub_image_1d(0, 0, width, format, GL_UNSIGNED_BYTE, data);
+        } else if (target == GL_TEXTURE_2D) {
+            tex.set_storage_2d(0, internal_format, width, height);
+            tex.set_sub_image_2d(0, 0, 0, width, height, format,
+                                 GL_UNSIGNED_BYTE, data);
+        }
         stbi_image_free(data);
     } else {
         stbi_image_free(data);
@@ -79,7 +79,9 @@ bool TextureLoader::update_hdr_texture(Texture &tex, const std::string &path) {
     int width, height, nrComponents;
     float *data = stbi_loadf(path.c_str(), &width, &height, &nrComponents, 0);
     if (data) {
-        tex.generate_2d(width, height, GL_RGB16F, GL_RGB, GL_FLOAT, data);
+        tex.set_storage_2d(0, GL_RGB16F, width, height);
+        tex.set_sub_image_2d(0, 0, 0, width, height, GL_RGB, GL_FLOAT, data);
+
         stbi_image_free(data);
     } else {
         stbi_image_free(data);
