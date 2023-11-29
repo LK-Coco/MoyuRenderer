@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include "glm/glm.hpp"
 
 namespace MR {
 
@@ -26,6 +27,12 @@ inline unsigned int custom_simple_hash(const char* cStr) {
 
 class Utils {
 public:
+    [[nodiscard]] static inline constexpr bool is_power_of2(uint32_t v) {
+        return v && !(v & (v - 1));
+    }
+
+    [[nodiscard]] static uint32_t calc_mip_levels(uint32_t size);
+
     static std::optional<std::string> get_file_path(const char* file_extern);
 
     static std::optional<std::string> imgui_image_button(

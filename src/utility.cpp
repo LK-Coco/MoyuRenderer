@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <optional>
+#include "glm/fwd.hpp"
 #include "utility.h"
 #include "resources/resources.h"
 #include "imgui.h"
@@ -7,6 +8,10 @@
 #include "imgui_impl_opengl3.h"
 
 namespace MR {
+
+uint32_t Utils::calc_mip_levels(uint32_t size) {
+    return glm::floor(glm::log2(static_cast<float>(size))) + 1u;
+}
 
 std::optional<std::string> Utils::get_file_path(const char* file_extern) {
     TCHAR szBuffer[MAX_PATH] = {0};
@@ -33,7 +38,7 @@ std::optional<std::string> Utils::imgui_image_button(
     ImGui::TextWrapped("%s", display_name.c_str());
     ImVec2 size{100, 100};
     auto map = Resources::get_texture(image_name);
-    ImTextureID id = map == nullptr ? 0 : (ImTextureID)(map->id);
+    ImTextureID id = map == nullptr ? 0 : (ImTextureID)(map->get_id());
     if (ImGui::ImageButton(id, size)) {
         return get_file_path("image files\0*.jpg;*.png\0");
     }
