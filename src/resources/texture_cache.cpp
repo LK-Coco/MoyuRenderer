@@ -1,10 +1,15 @@
 #include "texture_cache.h"
 #include <memory>
 #include "glm/common.hpp"
+#include "glm/fwd.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #include "utility.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#include "cube_capture.h"
+#include "object/cube.h"
 
 namespace MR {
 
@@ -81,5 +86,91 @@ std::shared_ptr<Texture> TextureCache::load(const std::string& name,
 
     return tex_cache_[id];
 }
+
+std::shared_ptr<Texture> TextureCache::hdri_to_env_cubemap(
+    const std::string& name, std::shared_ptr<Shader>& hdri,
+    std::shared_ptr<Shader>& shader, FrameBuffer& fbo) {
+    auto id = SHASH(name);
+
+    std::shared_ptr<Texture> env_cubemap =
+        std::make_shared<Texture>(GL_TEXTURE_CUBE_MAP);
+    auto num_levels = Utils::calc_mip_levels(512);
+    env_cubemap->set_storage_2d(num_levels, GL_RGB16F, 512, 512);
+    env_cubemap->set(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    env_cubemap->set(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    shader->use();
+    shader->set_int("equirectangularMap", 0);
+    shader->set_mat4("projection", capture_projection);
+
+    glViewport(0, 0, 512, 512);
+    fbo.bind();
+    Cube cube;
+
+    // for (unsigned int i = 0; i < 6; ++i) {
+    //     shader->set_mat4("view", capture_views[i]);
+    //     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+    //                            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+    //                            cube_tex.id, 0);
+    //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //     cube.render();  // renders a 1x1 cube
+    // }
+
+    return env_cubemap;
+}
+
+std::shared_ptr<Texture> TextureCache::env_cubemap_to_irradiance_map(
+    const std::string& name, std::shared_ptr<Texture>& env_cubemap,
+    std::shared_ptr<Shader>& shader, FrameBuffer& fbo, RenderBuffer& rbo) {
+    auto size = 32;
+
+    auto id = SHASH(name);
+    rbo.set_storage(GL_DEPTH_COMPONENT24, size, size);
+
+    auto num_levels = Utils::calc_mip_levels(size);
+
+    Texture irr_map{GL_TEXTURE_CUBE_MAP};
+    irr_map.set_storage_2d(0, GL_RGB16F, size, size);
+    irr_map.set(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    irr_map.set(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    irr_map.set(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    irr_map.set(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    irr_map.set(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    shader->use();
+    shader->set_int("equirectangularMap", 0);
+    shader->set_mat4("projection", capture_projection);
+
+    env_cubemap->bind(0);
+
+    glViewport(0, 0, size, size);
+    fbo.bind();
+    Cube cube;
+
+    const auto& clear_value = glm::vec4(0.0f);
+
+    for (unsigned int i = 0; i < 6; ++i) {
+        shader->set_mat4("view", capture_views[i]);
+        irr_map.create_face_view(0, 0, i);
+        fbo.attach_texture(GL_COLOR_ATTACHMENT0 + i, irr_map);
+        fbo.clear(GL_COLOR, i, glm::value_ptr(clear_value));
+
+        cube.render();
+    }
+    fbo.unbind();
+
+    auto ptr_irr_map = std::make_shared<Texture>(std::move(irr_map));
+    tex_cache_[id] = ptr_irr_map;
+    return ptr_irr_map;
+}
+
+std::shared_ptr<Texture> TextureCache::env_cubemap_to_prefilter_map(
+    const std::string& name, std::shared_ptr<Shader>& env_cubemap,
+    std::shared_ptr<Shader>& shader, FrameBuffer& fbo, RenderBuffer& rbo) {}
+
+std::shared_ptr<Texture> TextureCache::clac_brdf_lut(
+    const std::string& name, std::shared_ptr<Shader>& shader, FrameBuffer& fbo,
+    RenderBuffer& rbo) {}
 
 }  // namespace MR

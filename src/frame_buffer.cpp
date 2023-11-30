@@ -51,7 +51,7 @@ void FrameBuffer::attach_render_buffer(GLenum attachment,
 
 void FrameBuffer::attach_texture(GLenum attachment, Texture& texture,
                                  GLint level) {
-    glNamedFramebufferTexture(fbo_, attachment, texture.id, level);
+    glNamedFramebufferTexture(fbo_, attachment, texture.get_id(), level);
 }
 
 void FrameBuffer::attach_draw_buffer(GLsizei size, const GLenum* buffers) {

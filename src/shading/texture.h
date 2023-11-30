@@ -32,6 +32,10 @@ public:
 
     inline unsigned int get_id() const { return id_; }
 
+    inline unsigned int get_view() const { return view_; }
+
+    void create_face_view(GLuint mipLevel, GLuint layer, GLuint face);
+
     void set_buffer(GLenum internal_format, GLuint buffer);
 
     void set_buffer_range(GLenum internal_format, GLuint buffer,
@@ -121,6 +125,7 @@ public:
 
 private:
     unsigned int id_;
+    unsigned int view_{GL_NONE};
     GLenum target_;
 };
 

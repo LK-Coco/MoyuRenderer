@@ -8,6 +8,15 @@ Texture::Texture(GLenum target) : target_(target) {
 
 Texture::~Texture() { release(); }
 
+void Texture::create_face_view(GLuint mipLevel, GLuint layer, GLuint face) {
+    if (view_ != GL_NONE) glDeleteTextures(1, &view_);
+    glGenTextures(1, &view_);
+
+    glTextureView(view_, GL_TEXTURE_2D, id_,
+                  static_cast<GLenum>(internal_format), mipLevel, 1,
+                  (layer * 6) + face, 1);
+}
+
 void Texture::set_buffer(GLenum internal_format, GLuint buffer) {
     glTextureBuffer(id_, internal_format, buffer);
 }
