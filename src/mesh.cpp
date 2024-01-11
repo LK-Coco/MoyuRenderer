@@ -7,26 +7,26 @@ namespace MR {
 
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
            std::vector<Texture> textures) {
-    vertices_ = vertices;
-    indices_ = indices;
-    textures_ = textures;
+    this->vertices = vertices;
+    this->indices = indices;
+    this->textures = textures;
 
     init();
 }
 
 void Mesh::init() {
-    glGenVertexArrays(1, &vao_);
-    glGenBuffers(1, &vbo_);
-    glGenBuffers(1, &ebo_);
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ebo);
 
-    glBindVertexArray(vao_);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(Vertex),
-                 &vertices_[0], GL_STATIC_DRAW);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex),
+                 &vertices[0], GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 GLsizei(indices_.size()) * sizeof(unsigned int), &indices_[0],
+                 GLsizei(indices.size()) * sizeof(unsigned int), &indices[0],
                  GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -52,8 +52,8 @@ void Mesh::init() {
 }
 
 void Mesh::draw() {
-    glBindVertexArray(vao_);
-    glDrawElements(GL_TRIANGLES, GLsizei(indices_.size()), GL_UNSIGNED_INT, 0);
+    glBindVertexArray(vao);
+    glDrawElements(GL_TRIANGLES, GLsizei(indices.size()), GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0);
     glActiveTexture(GL_TEXTURE0);

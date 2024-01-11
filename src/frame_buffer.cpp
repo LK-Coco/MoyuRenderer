@@ -4,52 +4,161 @@
 
 namespace MR {
 
-FrameBuffer::FrameBuffer(int width, int height, bool bind_tex) {
-    glGenFramebuffers(1, &fbo_);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+FrameBuffer::FrameBuffer(int w, int h) {
+    width = w;
+    height = h;
 
-    if (bind_tex) {
-        glGenTextures(1, &texture_id_);
-        glBindTexture(GL_TEXTURE_2D, texture_id_);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
-                     GL_UNSIGNED_BYTE, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        // 将它附加到当前绑定的帧缓冲对象
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                               GL_TEXTURE_2D, texture_id_, 0);
+    init();
+}
+
+FrameBuffer::~FrameBuffer() { deinit(); }
+
+void FrameBuffer::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    attach_color_id = attach(GLAttachmentType::SING_2D_HDR_COL, 0);
+    attach_depth_id = attach(GLAttachmentType::SING_2D_HDR_DEP, 0);
+
+    check_completeness();
+}
+
+void FrameBuffer::deinit() { glDeleteFramebuffers(1, &fb_id); }
+
+GLuint FrameBuffer::attach(GLAttachmentType attach_type,
+                           unsigned int attach_index) {
+    const float border_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    GLuint tex_id;
+    glGenTextures(1, &tex_id);
+    switch (attach_type) {
+        case GLAttachmentType::MULT_2D_HDR_COL:
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex_id);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA16F,
+                                    width, height, GL_TRUE);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                   GL_COLOR_ATTACHMENT0 + attach_index,
+                                   GL_TEXTURE_2D_MULTISAMPLE, tex_id, 0);
+            break;
+        case GLAttachmentType::SING_2D_HDR_COL:
+            glBindTexture(GL_TEXTURE_2D, tex_id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGB,
+                         GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                   GL_COLOR_ATTACHMENT0 + attach_index,
+                                   GL_TEXTURE_2D, tex_id, 0);
+            break;
+        case GLAttachmentType::MULT_2D_HDR_DEP:
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex_id);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4,
+                                    GL_DEPTH_COMPONENT32F, width, height,
+                                    GL_TRUE);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                   GL_TEXTURE_2D_MULTISAMPLE, tex_id, 0);
+            break;
+        case GLAttachmentType::SING_2D_HDR_DEP:
+            glBindTexture(GL_TEXTURE_2D, tex_id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height,
+                         0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                   GL_TEXTURE_2D, tex_id, 0);
+            break;
+        case GLAttachmentType::SING_2D_HDR_COL_CLAMP:
+            glBindTexture(GL_TEXTURE_2D, tex_id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGB,
+                         GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                   GL_COLOR_ATTACHMENT0 + attach_index,
+                                   GL_TEXTURE_2D, tex_id, 0);
+            break;
+        case GLAttachmentType::SING_2D_HDR_DEP_BORDER:
+            glBindTexture(GL_TEXTURE_2D, tex_id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height,
+                         0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+                            GL_COMPARE_REF_TO_TEXTURE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                            GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                            GL_CLAMP_TO_BORDER);
+            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
+                             border_color);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                   GL_TEXTURE_2D, tex_id, 0);
+            break;
     }
 
-    glGenRenderbuffers(1, &rbo_);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo_);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width,
-                          height);  // use a single renderbuffer object for both
-                                    // a depth AND stencil buffer.
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                              GL_RENDERBUFFER,
-                              rbo_);  // now actually attach it
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
-                  << std::endl;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return tex_id;
 }
 
-FrameBuffer::~FrameBuffer() {
-    glDeleteFramebuffers(1, &fbo_);
-    glDeleteRenderbuffers(1, &rbo_);
-    glDeleteTextures(1, &texture_id_);
-}
-
-void FrameBuffer::resize(int width, int height) {
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo_);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
-}
-
-void FrameBuffer::bind() { glBindFramebuffer(GL_FRAMEBUFFER, fbo_); }
+void FrameBuffer::bind() { glBindFramebuffer(GL_FRAMEBUFFER, fb_id); }
 
 void FrameBuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+
+void FrameBuffer::blit_to(const FrameBuffer& fbo, GLbitfield mask) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fb_id);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo.fb_id);
+    if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT) {
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    }
+    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, mask,
+                      GL_NEAREST);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_id);
+}
+
+bool FrameBuffer::check_completeness() {
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
+                  << std::endl;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return false;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    return true;
+}
+
+void CaptureFBO::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    glGenRenderbuffers(1, &rbo_id);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo_id);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                              GL_RENDERBUFFER, rbo_id);
+
+    check_completeness();
+}
+
+void CaptureFBO::deinit() {
+    glDeleteFramebuffers(1, &fb_id);
+    glDeleteRenderbuffers(1, &rbo_id);
+}
+
+void CaptureFBO::resize(int width, int height) {
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo_id);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+}
 
 }  // namespace MR
