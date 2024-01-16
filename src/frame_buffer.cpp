@@ -4,29 +4,8 @@
 
 namespace MR {
 
-FrameBuffer::FrameBuffer(int w, int h) {
-    width = w;
-    height = h;
-
-    init();
-}
-
-FrameBuffer::~FrameBuffer() { deinit(); }
-
-void FrameBuffer::init() {
-    glGenFramebuffers(1, &fb_id);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-
-    attach_color_id = attach(GLAttachmentType::SING_2D_HDR_COL, 0);
-    attach_depth_id = attach(GLAttachmentType::SING_2D_HDR_DEP, 0);
-
-    check_completeness();
-}
-
-void FrameBuffer::deinit() { glDeleteFramebuffers(1, &fb_id); }
-
-GLuint FrameBuffer::attach(GLAttachmentType attach_type,
-                           unsigned int attach_index) {
+GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
+              std::uint32_t width, std::uint32_t height) {
     const float border_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
     GLuint tex_id;
@@ -108,6 +87,29 @@ GLuint FrameBuffer::attach(GLAttachmentType attach_type,
     return tex_id;
 }
 
+FrameBuffer::FrameBuffer(int w, int h) {
+    width = w;
+    height = h;
+
+    init();
+}
+
+FrameBuffer::~FrameBuffer() { deinit(); }
+
+void FrameBuffer::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    attach_color_id =
+        attach(GLAttachmentType::SING_2D_HDR_COL, 0, width, height);
+    attach_depth_id =
+        attach(GLAttachmentType::SING_2D_HDR_DEP, 0, width, height);
+
+    check_completeness();
+}
+
+void FrameBuffer::deinit() { glDeleteFramebuffers(1, &fb_id); }
+
 void FrameBuffer::bind() { glBindFramebuffer(GL_FRAMEBUFFER, fb_id); }
 
 void FrameBuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
@@ -147,6 +149,7 @@ void CaptureFBO::init() {
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                               GL_RENDERBUFFER, rbo_id);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     check_completeness();
 }
@@ -160,5 +163,80 @@ void CaptureFBO::resize(int width, int height) {
     glBindRenderbuffer(GL_RENDERBUFFER, rbo_id);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
 }
+
+void MultiSampledFBO::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    attach_color_id =
+        attach(GLAttachmentType::MULT_2D_HDR_COL, 0, width, height);
+    attach_depth_id =
+        attach(GLAttachmentType::MULT_2D_HDR_DEP, 0, width, height);
+
+    check_completeness();
+}
+
+void ResolveBufferFBO::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    attach_color_id =
+        attach(GLAttachmentType::SING_2D_HDR_COL, 0, width, height);
+    attach_depth_id =
+        attach(GLAttachmentType::SING_2D_HDR_DEP, 0, width, height);
+    blur_high_end =
+        attach(GLAttachmentType::SING_2D_HDR_COL_CLAMP, 1, width, height);
+
+    check_completeness();
+}
+
+void ResolveBufferFBO::deinit() { glDeleteFramebuffers(1, &fb_id); }
+
+void QuadHDRBufferFBO::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    attach_color_id =
+        attach(GLAttachmentType::SING_2D_HDR_COL_CLAMP, 0, width, height);
+
+    check_completeness();
+}
+
+void QuadHDRBufferFBO::deinit() { glDeleteFramebuffers(1, &fb_id); }
+
+void DirShadowBufferFBO::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    attach_depth_id =
+        attach(GLAttachmentType::SING_2D_HDR_DEP_BORDER, 0, width, height);
+
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    check_completeness();
+}
+
+void DirShadowBufferFBO::deinit() { glDeleteFramebuffers(1, &fb_id); }
+
+void PointShadowBufferFBO::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    tex_drawing.generate_texture_id();
+    tex_drawing.bind();
+    tex_drawing.generate_with_type(width, height, CubeMapType::SHADOW_MAP);
+    attach_depth_id = tex_drawing.id;
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, attach_depth_id,
+                         0);
+
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    check_completeness();
+}
+
+void PointShadowBufferFBO::deinit() { glDeleteFramebuffers(1, &fb_id); }
 
 }  // namespace MR

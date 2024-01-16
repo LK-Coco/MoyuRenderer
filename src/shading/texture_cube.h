@@ -4,6 +4,12 @@
 
 namespace MR {
 
+enum CubeMapType {
+    SHADOW_MAP,
+    HDR_MAP,
+    PREFILTER_MAP,
+};
+
 class TextureCube {
 public:
     unsigned int id;
@@ -27,6 +33,9 @@ public:
 
     void generate_texture_id();
 
+    void generate_with_type(const int width, const int height,
+                            CubeMapType type);
+
     void generate_face(GLenum face, unsigned int width, unsigned int height,
                        GLenum format, GLenum type, unsigned char* data);
 
@@ -45,6 +54,10 @@ public:
     void bind(int unit = -1);
     void unbind();
     void release();
+
+    static constexpr int NUM_FACE = 6;
+
+    unsigned int max_mip_levels;
 };
 
 }  // namespace MR

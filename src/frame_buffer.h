@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include "glm/glm.hpp"
 #include "glad/glad.h"
+#include "shading/texture_cube.h"
 
 namespace MR {
 
@@ -21,8 +22,6 @@ struct FrameBuffer {
 
     virtual void init();
     virtual void deinit();
-
-    GLuint attach(GLAttachmentType attach_type, unsigned int attach_index);
 
     void bind();
     void unbind();
@@ -49,6 +48,34 @@ struct CaptureFBO : public FrameBuffer {
     void resize(int width, int height);
 
     GLuint rbo_id;
+};
+
+struct MultiSampledFBO : public FrameBuffer {
+    void init() override;
+};
+
+struct ResolveBufferFBO : public FrameBuffer {
+    void init() override;
+    void deinit() override;
+
+    GLuint blur_high_end;
+};
+
+struct QuadHDRBufferFBO : public FrameBuffer {
+    void init() override;
+    void deinit() override;
+};
+
+struct DirShadowBufferFBO : public FrameBuffer {
+    void init() override;
+    void deinit() override;
+};
+
+struct PointShadowBufferFBO : public FrameBuffer {
+    void init() override;
+    void deinit() override;
+
+    TextureCube tex_drawing;
 };
 
 }  // namespace MR
