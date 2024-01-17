@@ -17,6 +17,12 @@ public:
     GLuint get_image_id() const override;
 
 private:
+    void render_point_light_shadow();
+
+    void render_dir_light_shadow();
+
+    void render_objects();
+
     FrameBuffer fbo_;
 };
 

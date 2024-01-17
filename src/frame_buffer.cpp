@@ -159,9 +159,11 @@ void CaptureFBO::deinit() {
     glDeleteRenderbuffers(1, &rbo_id);
 }
 
-void CaptureFBO::resize(int width, int height) {
+void CaptureFBO::resize(int w, int h) {
+    width = w;
+    height = h;
     glBindRenderbuffer(GL_RENDERBUFFER, rbo_id);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
 }
 
 void MultiSampledFBO::init() {

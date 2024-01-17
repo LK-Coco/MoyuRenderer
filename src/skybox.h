@@ -8,9 +8,7 @@ namespace MR {
 
 class Skybox {
 public:
-    void init();
-
-    void set_map(TextureCube* tex);
+    void set_hdr_cube_map(TextureCube* tex);
 
     void draw();
 

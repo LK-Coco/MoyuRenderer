@@ -69,7 +69,7 @@ TextureCube* Resources::load_texture_cube(const std::string& name,
 
 TextureCube* Resources::environment_map_to_cubemap(
     const std::string& name, Texture* tex, std::shared_ptr<Shader>& shader,
-    FrameBuffer& fbo) {
+    CaptureFBO& fbo) {
     unsigned int id = SHASH(name);
 
     TextureCube cube_tex;
@@ -125,7 +125,7 @@ TextureCube* Resources::environment_map_to_cubemap(
 
 TextureCube* Resources::env_cubemap_to_irradiance_map(
     const std::string& name, TextureCube* tex, std::shared_ptr<Shader>& shader,
-    FrameBuffer& fbo) {
+    CaptureFBO& fbo) {
     unsigned int id = SHASH(name);
 
     fbo.resize(32, 32);
@@ -179,7 +179,7 @@ TextureCube* Resources::env_cubemap_to_irradiance_map(
 
 TextureCube* Resources::env_cubemap_to_prefilter_map(
     const std::string& name, TextureCube* env_cubemap,
-    std::shared_ptr<Shader>& shader, FrameBuffer& fbo) {
+    std::shared_ptr<Shader>& shader, CaptureFBO& fbo) {
     unsigned int id = SHASH(name);
 
     TextureCube prefilter_map;
@@ -218,7 +218,7 @@ TextureCube* Resources::env_cubemap_to_prefilter_map(
         // reisze framebuffer according to mip-level size.
         unsigned int mipWidth = 128 * std::pow(0.5, mip);
         unsigned int mipHeight = 128 * std::pow(0.5, mip);
-        glBindRenderbuffer(GL_RENDERBUFFER, fbo.get_rbo_id());
+        glBindRenderbuffer(GL_RENDERBUFFER, fbo.fb_id);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth,
                               mipHeight);
         glViewport(0, 0, mipWidth, mipHeight);
@@ -244,7 +244,7 @@ TextureCube* Resources::env_cubemap_to_prefilter_map(
 
 Texture* Resources::clac_brdf_lut(const std::string& name,
                                   std::shared_ptr<Shader>& shader,
-                                  FrameBuffer& fbo) {
+                                  CaptureFBO& fbo) {
     unsigned int id = SHASH(name);
 
     Texture lut_tex;
@@ -257,7 +257,7 @@ Texture* Resources::clac_brdf_lut(const std::string& name,
     //  then re-configure capture framebuffer object and render screen-space
     //  quad with BRDF shader.
     fbo.bind();
-    glBindRenderbuffer(GL_RENDERBUFFER, fbo.get_rbo_id());
+    glBindRenderbuffer(GL_RENDERBUFFER, fbo.fb_id);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                            lut_tex.id, 0);

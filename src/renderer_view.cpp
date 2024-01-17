@@ -122,7 +122,7 @@ void RendererView::init(int width, int height) {
         {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(0, 0, -5.0f)});
 
     // 预处理hdr环境贴图
-    auto fbo = FrameBuffer(512, 512, false);
+    auto fbo = CaptureFBO(512, 512);
 
     // 加载hdr环境贴图
     auto hdr_tex = Resources::load_hdr_texture("hdr_env_map",
@@ -160,8 +160,7 @@ void RendererView::init(int width, int height) {
     skybox_shader_ = std::make_shared<Shader>(
         "assets/shaders/skybox/skybox.vs", "assets/shaders/skybox/skybox.fs");
     Scene::skybox = std::make_shared<Skybox>();
-    Scene::skybox->init();
-    Scene::skybox->set_map(hdr_cubemap);
+    Scene::skybox->set_hdr_cube_map(hdr_cubemap);
     // 设置Material
     cur_material_ = 1;
     switch_material();

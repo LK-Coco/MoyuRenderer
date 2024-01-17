@@ -34,14 +34,14 @@ struct FrameBuffer {
 
     int width, height;
 
-    // std::unordered_map<GLAttachmentType, std::vector<GLuint>> attaches;
-
     GLuint fb_id;
     GLuint attach_color_id;
     GLuint attach_depth_id;
 };
 
 struct CaptureFBO : public FrameBuffer {
+    CaptureFBO(int w, int h) : FrameBuffer(w, h) {}
+
     void init() override;
     void deinit() override;
 

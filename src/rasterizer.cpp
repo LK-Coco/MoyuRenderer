@@ -4,8 +4,7 @@
 
 namespace MR {
 
-Rasterizer::Rasterizer()
-    : fbo_(FrameBuffer(Scene::width, Scene::height, true)) {
+Rasterizer::Rasterizer() : fbo_(FrameBuffer(Scene::width, Scene::height)) {
     // std::string skybox_map_path = "assets/Skybox/Lake/";
 }
 
@@ -29,6 +28,6 @@ void Rasterizer::render_skybox(std::shared_ptr<Skybox>& skybox) {
     fbo_.unbind();
 }
 
-GLuint Rasterizer::get_image_id() const { return fbo_.get_texture_id(); }
+GLuint Rasterizer::get_image_id() const { return fbo_.fb_id; }
 
 }  // namespace MR

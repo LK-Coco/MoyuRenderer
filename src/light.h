@@ -5,23 +5,38 @@
 
 namespace MR {
 
-struct PointLight {
-    glm::vec3 color;
-    glm::vec3 position;
+struct BaseLight {
+    glm::vec3 color = glm::vec3(1.0f);
+    glm::mat4 shadow_projection_mat = glm::mat4(0.0);
 
-    PointLight(const glm::vec3& c, const glm::vec3& pos)
-        : color(c),
-          position(pos) {}
-    virtual ~PointLight() = default;
+    bool changed = false;
+
+    float strength = 1.0f;
+    float z_near = 1.0f;
+    float z_far = 2000.0f;
+
+    unsigned int shadow_res = 1024;
+    unsigned int depth_map_tex_id = 0;
 };
 
-struct DirLight : public PointLight {
-    glm::vec3 direction;
+struct PointLight : public BaseLight {
+    PointLight(glm::vec3 c, glm::vec3 p) {
+        color = c;
+        position = p;
+    }
 
-    explicit DirLight(const glm::vec3& pos, const glm::vec3& dir,
-                      const glm::vec3& c)
-        : direction(dir),
-          PointLight(c, pos) {}
+    glm::vec3 position = glm::vec3(0.0f);
+    glm::mat4 look_at_per_face[6];
+};
+
+struct DirLight : public BaseLight {
+    glm::vec3 direction = glm::vec3(-1.0f);
+
+    glm::mat4 light_view = glm::mat4(0.0);
+    glm::mat4 light_space_mat = glm::mat4(0.0);
+
+    float distance;
+    float ortho_box_size;
 };
 
 }  // namespace MR
