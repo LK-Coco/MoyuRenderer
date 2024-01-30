@@ -106,10 +106,10 @@ void RendererView::init(int width, int height) {
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 450");
 
-    Scene::model = std::make_shared<Sphere>();
-    // std::make_shared<Model>("assets/AfricanHead/african_head.obj");
-    // std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
-    // std::make_shared<Model>("assets/Cerberus/Cerberus_LP.FBX");
+    // Scene::model = std::make_shared<Sphere>();
+    //  std::make_shared<Model>("assets/AfricanHead/african_head.obj");
+    //  std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
+    //  std::make_shared<Model>("assets/Cerberus/Cerberus_LP.FBX");
 
     // 设置灯光
     Scene::point_light.push_back(
@@ -165,6 +165,9 @@ void RendererView::init(int width, int height) {
     cur_material_ = 1;
     switch_material();
 
+    Entity entity{std::make_shared<Sphere>(), obj_mat_};
+    Scene::entities.push_back(entity);
+
     renderer_ = std::make_shared<Rasterizer>();
 
     std::cout << "init view ok!" << std::endl;
@@ -189,9 +192,7 @@ void RendererView::run() {
             (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
         glm::mat4 view = Scene::camera->get_view_mat();
 
-        obj_mat_->fill_unifrom();
-
-        renderer_->render(Scene::model, obj_mat_);
+        renderer_->render();
 
         // 天空盒
         // view = glm::mat4(glm::mat3(view));  // 移除translation参数

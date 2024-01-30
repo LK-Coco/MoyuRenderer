@@ -23,7 +23,7 @@ public:
 
     void display_ui() override;
 
-    void fill_unifrom() override;
+    void fill_unifrom(const Object& obj) override;
 
 private:
     Texture* albedo_map_;

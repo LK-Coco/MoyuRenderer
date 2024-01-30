@@ -83,7 +83,7 @@ void PBRMaterial::display_ui() {
     }
 }
 
-void PBRMaterial::fill_unifrom() {
+void PBRMaterial::fill_unifrom(const Object& obj) {
     glm::mat4 projection = glm::perspective(
         glm::radians(Scene::camera->get_zoom()),
         (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
@@ -93,8 +93,9 @@ void PBRMaterial::fill_unifrom() {
     shader_->set_mat4("projection", projection);
     shader_->set_mat4("view", view);
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    model = glm::translate(model, obj.position);
+
+    model = glm::scale(model, obj.scale);
     shader_->set_mat4("model", model);
     shader_->set_mat3("normalMatrix",
                       glm::transpose(glm::inverse(glm::mat3(model))));

@@ -4,6 +4,7 @@
 #include "shader.h"
 #include "shading_type.h"
 #include "glm/glm.hpp"
+#include "object/object.h"
 
 namespace MR {
 
@@ -11,7 +12,7 @@ class Material {
 public:
     virtual void display_ui(){};
 
-    virtual void fill_unifrom() = 0;
+    virtual void fill_unifrom(const Object& obj) = 0;
 
     Shader* get_shader() const;
     void set_shader(Shader* shader);

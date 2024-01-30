@@ -116,6 +116,7 @@ void main()
     vec3 Lo = vec3(0.0);
     for(int i = 0; i < 4; ++i) 
     {
+        // light的直接光贡献
         // calculate per-light radiance
         vec3 L = normalize(lightPositions[i] - WorldPos);
         vec3 H = normalize(V + L);
@@ -123,6 +124,7 @@ void main()
         float attenuation = 1.0 / (distance * distance);
         vec3 radiance = lightColors[i] * attenuation;
 
+        // 基于Cook-Torrance BRDF计算间接光
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughness);   
         float G   = GeometrySmith(N, V, L, roughness);      

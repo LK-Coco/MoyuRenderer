@@ -18,4 +18,6 @@ std::shared_ptr<Object> Scene::model = nullptr;
 
 std::vector<PointLight> Scene::point_light;
 
+std::vector<Entity> Scene::entities;
+
 }  // namespace MR

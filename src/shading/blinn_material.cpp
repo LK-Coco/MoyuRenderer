@@ -23,7 +23,7 @@ void BlinnMaterial::display_ui() {
     }
 }
 
-void BlinnMaterial::fill_unifrom() {
+void BlinnMaterial::fill_unifrom(const Object& obj) {
     glm::mat4 projection = glm::perspective(
         glm::radians(60.f), (float)Scene::width / (float)Scene::height, 0.1f,
         100.0f);

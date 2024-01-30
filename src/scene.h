@@ -5,6 +5,7 @@
 #include "object/object.h"
 #include "light.h"
 #include "skybox.h"
+#include "entity.h"
 
 namespace MR {
 
@@ -17,6 +18,8 @@ public:
     static std::shared_ptr<Camera> camera;
     static std::shared_ptr<Object> model;
     static std::vector<PointLight> point_light;
+
+    static std::vector<Entity> entities;
 };
 
 }  // namespace MR

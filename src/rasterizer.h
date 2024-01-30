@@ -9,19 +9,22 @@ class Rasterizer : public Renderer {
 public:
     Rasterizer();
 
-    void render(std::shared_ptr<Object>& object,
-                std::shared_ptr<Material>& mat) override;
+    void render() override;
 
     void render_skybox(std::shared_ptr<Skybox>& skybox) override;
 
     GLuint get_image_id() const override;
 
 private:
-    void render_point_light_shadow();
+    void draw_point_light_shadow();
 
-    void render_dir_light_shadow();
+    void draw_dir_light_shadow();
 
-    void render_objects();
+    void draw_depth_pass();
+
+    void draw_objects();
+
+    void post_process();
 
     FrameBuffer fbo_;
 };
