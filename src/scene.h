@@ -20,6 +20,7 @@ public:
     static std::vector<PointLight> point_light;
 
     static std::vector<Entity> entities;
+    static DirLight dir_light;
 };
 
 }  // namespace MR

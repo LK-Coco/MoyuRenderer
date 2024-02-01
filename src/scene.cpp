@@ -20,4 +20,6 @@ std::vector<PointLight> Scene::point_light;
 
 std::vector<Entity> Scene::entities;
 
+DirLight Scene::dir_light;
+
 }  // namespace MR

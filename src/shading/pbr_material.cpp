@@ -92,10 +92,7 @@ void PBRMaterial::fill_unifrom(const Object& obj) {
     shader_->use();
     shader_->set_mat4("projection", projection);
     shader_->set_mat4("view", view);
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, obj.position);
-
-    model = glm::scale(model, obj.scale);
+    glm::mat4 model = obj.get_model_matrix();
     shader_->set_mat4("model", model);
     shader_->set_mat3("normalMatrix",
                       glm::transpose(glm::inverse(glm::mat3(model))));

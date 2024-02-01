@@ -67,6 +67,9 @@ struct QuadHDRBufferFBO : public FrameBuffer {
 };
 
 struct DirShadowBufferFBO : public FrameBuffer {
+    DirShadowBufferFBO() : FrameBuffer(2048, 2048) {}
+    DirShadowBufferFBO(int w, int h) : FrameBuffer(w, h) {}
+
     void init() override;
     void deinit() override;
 };

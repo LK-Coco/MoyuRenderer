@@ -13,6 +13,7 @@
 #include "object/model.h"
 #include "object/cube.h"
 #include "object/sphere.h"
+#include "object/quad.h"
 #include "rasterizer.h"
 #include "shading/pbr_material.h"
 #include "shading/blinn_material.h"
@@ -121,6 +122,15 @@ void RendererView::init(int width, int height) {
     Scene::point_light.push_back(
         {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(0, 0, -5.0f)});
 
+    Scene::dir_light.direction = glm::vec3(0.0f, -5.0f, 1.333f);
+    Scene::dir_light.distance = 100;
+    Scene::dir_light.color = glm::vec3(300, 300, 300);
+    Scene::dir_light.strength = 1;
+    Scene::dir_light.z_near = 1.0;
+    Scene::dir_light.z_far = 700;
+    Scene::dir_light.ortho_box_size = 100;
+    Scene::dir_light.shadow_res = 2048;
+
     // 预处理hdr环境贴图
     auto fbo = CaptureFBO(512, 512);
 
@@ -165,8 +175,14 @@ void RendererView::init(int width, int height) {
     cur_material_ = 1;
     switch_material();
 
-    Entity entity{std::make_shared<Sphere>(), obj_mat_};
-    Scene::entities.push_back(entity);
+    Entity sphere{std::make_shared<Sphere>(), obj_mat_};
+    Entity quad{std::make_shared<Quad>(), obj_mat_};
+    quad.obj->position.y = -1.5f;
+    quad.obj->scale = glm::vec3(3, 3, 1);
+    quad.obj->rotation_axis = glm::vec3(1, 0, 0);
+    quad.obj->angle = glm::radians(90.0f);
+    Scene::entities.push_back(sphere);
+    Scene::entities.push_back(quad);
 
     renderer_ = std::make_shared<Rasterizer>();
 

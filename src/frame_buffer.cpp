@@ -69,6 +69,7 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
                          0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
                             GL_COMPARE_REF_TO_TEXTURE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
@@ -110,7 +111,15 @@ void FrameBuffer::init() {
 
 void FrameBuffer::deinit() { glDeleteFramebuffers(1, &fb_id); }
 
-void FrameBuffer::bind() { glBindFramebuffer(GL_FRAMEBUFFER, fb_id); }
+void FrameBuffer::clear(GLbitfield clear_target, glm::vec3 clear_color) {
+    glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
+    glClear(clear_target);
+}
+
+void FrameBuffer::bind() {
+    glViewport(0, 0, width, height);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+}
 
 void FrameBuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
