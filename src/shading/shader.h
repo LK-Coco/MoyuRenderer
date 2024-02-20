@@ -12,11 +12,14 @@ public:
     Shader() : id_(-1){};
     Shader(const char* vertex_path, const char* fragment_path,
            const char* geometry_path = nullptr);
+    Shader(const char* comp_path);
     virtual ~Shader() {}
 
     unsigned int get_id() const { return id_; }
 
     void use();
+
+    void dispatch(unsigned int x, unsigned int y, unsigned int z) const;
 
     // bool has_uniform(const std::string& name);
     // inline const std::unordered_map<std::string, Uniform>& get_unifrom()

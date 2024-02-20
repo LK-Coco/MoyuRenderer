@@ -137,7 +137,31 @@ Shader::Shader(const char* vertex_path, const char* fragment_path,
     std::cout << "shader init ok!   " << vertex_path << std::endl;
 }
 
+Shader::Shader(const char* comp_path) {
+    std::string comp_code;
+
+    read_shader_file(comp_path, comp_code);
+    const char* c_comp_code = comp_code.c_str();
+
+    unsigned int comp = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(comp, 1, &c_comp_code, NULL);
+    glCompileShader(comp);
+    check_compile_error(comp, "COMPUTE");
+
+    id_ = glCreateProgram();
+    glAttachShader(id_, comp);
+    glLinkProgram(id_);
+    check_compile_error(id_, "PROGRAM");
+
+    glDeleteShader(comp);
+}
+
 void Shader::use() { glUseProgram(id_); }
+
+void Shader::dispatch(unsigned int x, unsigned int y, unsigned int z) const {
+    glDispatchCompute(x, y, z);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+}
 
 // bool Shader::has_uniform(const std::string& name) {
 //     return uniforms_.find(name) != uniforms_.end();

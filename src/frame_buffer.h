@@ -17,6 +17,7 @@ enum class GLAttachmentType {
 };
 
 struct FrameBuffer {
+    FrameBuffer() {}
     FrameBuffer(int width, int height);
     ~FrameBuffer();
 
@@ -51,6 +52,8 @@ struct CaptureFBO : public FrameBuffer {
 };
 
 struct MultiSampledFBO : public FrameBuffer {
+    MultiSampledFBO(int w, int h) : FrameBuffer(w, h) {}
+
     void init() override;
 };
 

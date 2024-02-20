@@ -20,6 +20,11 @@ public:
         update();
     }
 
+    glm::mat4 get_projection(int w, int h) {
+        return glm::perspective(glm::radians(zoom_), (float)w / (float)h, 0.1f,
+                                100.0f);
+    }
+
     glm::mat4 get_view_mat() {
         update();
         return glm::lookAt(position, position + front_, up_);
