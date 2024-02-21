@@ -24,7 +24,8 @@ UniformType gl_uniform_type_to_uniform_type(GLenum gltype) {
     }
 }
 
-bool check_compile_error(GLuint shader, const std::string& type) {
+bool check_compile_error(GLuint shader, const std::string& type,
+                         const char* file) {
     GLint success;
     GLchar infoLog[1024];
     if (type == "PROGRAM") {
@@ -32,7 +33,7 @@ bool check_compile_error(GLuint shader, const std::string& type) {
         if (!success) {
             glGetProgramInfoLog(shader, 1024, NULL, infoLog);
             std::cout
-                << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n"
+                << file << " -- ERROR::PROGRAM_LINKING_ERROR of type: Program\n"
                 << infoLog
                 << "\n -- --------------------------------------------------- "
                    "-- "
@@ -43,7 +44,9 @@ bool check_compile_error(GLuint shader, const std::string& type) {
         if (!success) {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
             std::cout
-                << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n"
+                << file
+                << " -- ERROR::SHADER_COMPILATION_ERROR of type: " << type
+                << "\n"
                 << infoLog
                 << "\n -- --------------------------------------------------- "
                    "-- "
@@ -85,25 +88,25 @@ Shader::Shader(const char* vertex_path, const char* fragment_path,
     vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &v_shader_code, NULL);
     glCompileShader(vertex);
-    check_compile_error(vertex, "VERTEX");
+    check_compile_error(vertex, "VERTEX", vertex_path);
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment, 1, &f_shader_code, NULL);
     glCompileShader(fragment);
-    check_compile_error(fragment, "FRAGMENT");
+    check_compile_error(fragment, "FRAGMENT", fragment_path);
     unsigned int geometry;
     if (geometry_path != nullptr) {
         const char* gShaderCode = geometry_code.c_str();
         geometry = glCreateShader(GL_GEOMETRY_SHADER);
         glShaderSource(geometry, 1, &gShaderCode, NULL);
         glCompileShader(geometry);
-        check_compile_error(geometry, "GEOMETRY");
+        check_compile_error(geometry, "GEOMETRY", geometry_path);
     }
     id_ = glCreateProgram();
     glAttachShader(id_, vertex);
     glAttachShader(id_, fragment);
     if (geometry_path != nullptr) glAttachShader(id_, geometry);
     glLinkProgram(id_);
-    check_compile_error(id_, "PROGRAM");
+    check_compile_error(id_, "PROGRAM", "program");
     glDeleteShader(vertex);
     glDeleteShader(fragment);
     if (geometry_path != nullptr) glDeleteShader(geometry);
@@ -146,12 +149,12 @@ Shader::Shader(const char* comp_path) {
     unsigned int comp = glCreateShader(GL_COMPUTE_SHADER);
     glShaderSource(comp, 1, &c_comp_code, NULL);
     glCompileShader(comp);
-    check_compile_error(comp, "COMPUTE");
+    check_compile_error(comp, "COMPUTE", comp_path);
 
     id_ = glCreateProgram();
     glAttachShader(id_, comp);
     glLinkProgram(id_);
-    check_compile_error(id_, "PROGRAM");
+    check_compile_error(id_, "PROGRAM", "program");
 
     glDeleteShader(comp);
 }

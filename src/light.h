@@ -39,4 +39,13 @@ struct DirLight : public BaseLight {
     float ortho_box_size;
 };
 
+struct GPULight {
+    glm::vec4 position;
+    glm::vec4 color;
+    unsigned int enabled;
+    float intensity;
+    float range;
+    float padding;
+};
+
 }  // namespace MR

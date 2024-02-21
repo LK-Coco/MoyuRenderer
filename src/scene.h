@@ -21,6 +21,8 @@ public:
 
     static std::vector<Entity> entities;
     static DirLight dir_light;
+
+    static void load_json(const char* file_path);
 };
 
 }  // namespace MR

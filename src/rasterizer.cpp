@@ -2,13 +2,21 @@
 #include "rasterizer.h"
 #include "scene.h"
 #include "resources/resources.h"
+#include "gpu_data.h"
 
 namespace MR {
 
 Rasterizer::Rasterizer()
     : fbo_(FrameBuffer(Scene::width, Scene::height)),
       multi_sample_fbo_(Scene::width, Scene::height) {
+    num_lights_ = Scene::point_light.size();
+    point_shadow_fbos_ = new PointShadowBufferFBO[num_lights_];
+
     load_shaders();
+
+    init_ssbo();
+
+    pre_process();
 }
 
 void Rasterizer::render() {
@@ -17,7 +25,7 @@ void Rasterizer::render() {
 
     draw_dir_light_shadow();
 
-    draw_point_light_shadow();
+    // draw_point_light_shadow();
 
     draw_depth_pass();
 
@@ -65,9 +73,145 @@ void Rasterizer::load_shaders() {
                                  "assets/shaders/pbr_cluster_shader.fs");
 }
 
-void Rasterizer::init_ssbo() {}
+void Rasterizer::init_ssbo() {
+    size_x_ = (unsigned int)Scene::width / GRID_SIZE_X;
+    float z_near = Scene::camera->frustum.near_plane;
+    float z_far = Scene::camera->frustum.far_plane;
 
-void Rasterizer::pre_process() {}
+    // 设置aabb_volume_grid_ssbo_
+    {
+        glGenBuffers(1, &aabb_volume_grid_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, aabb_volume_grid_ssbo_);
+
+        // We generate the buffer but don't populate it yet.
+        glBufferData(GL_SHADER_STORAGE_BUFFER,
+                     NUM_CLUSTERS * sizeof(struct VolumeTileAABB), NULL,
+                     GL_STATIC_COPY);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, aabb_volume_grid_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
+    // 设置screen_to_view_ssbo_
+    {
+        glGenBuffers(1, &screen_to_view_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, screen_to_view_ssbo_);
+
+        // Setting up contents of buffer
+        screen_to_view.inverse_projection_mat =
+            glm::inverse(Scene::camera->get_projection());
+        screen_to_view.tile_sizes[0] = GRID_SIZE_X;
+        screen_to_view.tile_sizes[1] = GRID_SIZE_Y;
+        screen_to_view.tile_sizes[2] = GRID_SIZE_Z;
+        screen_to_view.tile_sizes[3] = size_x_;
+        screen_to_view.screen_width = Scene::width;
+        screen_to_view.screen_height = Scene::height;
+        // Basically reduced a log function into a simple multiplication an
+        // addition by pre-calculating these
+        screen_to_view.slice_scaling_factor =
+            (float)GRID_SIZE_Z / std::log2f(z_far / z_near);
+        screen_to_view.slice_bias_factor =
+            -((float)GRID_SIZE_Z * std::log2f(z_near) /
+              std::log2f(z_far / z_near));
+
+        // Generating and copying data to memory in GPU
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(struct ScreenToView),
+                     &screen_to_view, GL_STATIC_COPY);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, screen_to_view_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
+    // 设置light_ssbo_
+    {
+        glGenBuffers(1, &light_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, light_ssbo_);
+        glBufferData(GL_SHADER_STORAGE_BUFFER,
+                     MAX_LIGHTS * sizeof(struct GPULight), NULL,
+                     GL_DYNAMIC_DRAW);
+
+        GLint buf_mask = GL_READ_WRITE;
+
+        struct GPULight* lights =
+            (struct GPULight*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, buf_mask);
+        PointLight* light;
+        for (unsigned int i = 0; i < num_lights_; ++i) {
+            // Fetching the light from the current scene
+            light = &Scene::point_light[i];
+            lights[i].position = glm::vec4(light->position, 1.0f);
+            lights[i].color = glm::vec4(light->color, 1.0f);
+            lights[i].enabled = 1;
+            lights[i].intensity = 1.0f;
+            lights[i].range = 65.0f;
+        }
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, light_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
+    // 设置light_index_list_ssbo_
+    // A list of indices to the lights that are active and intersect with a
+    // cluster
+    {
+        unsigned int totalNumLights =
+            NUM_CLUSTERS * MAX_LIGHTS_PER_TILE;  // 50 lights per tile max
+        glGenBuffers(1, &light_index_list_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, light_index_list_ssbo_);
+
+        // We generate the buffer but don't populate it yet.
+        glBufferData(GL_SHADER_STORAGE_BUFFER,
+                     totalNumLights * sizeof(unsigned int), NULL,
+                     GL_STATIC_COPY);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, light_index_list_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
+    // 设置light_grid_ssbo_
+    // Every tile takes two unsigned ints one to represent the number of lights
+    // in that grid Another to represent the offset to the light index list from
+    // where to begin reading light indexes from This implementation is straight
+    // up from Olsson paper
+    {
+        glGenBuffers(1, &light_grid_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, light_grid_ssbo_);
+
+        glBufferData(GL_SHADER_STORAGE_BUFFER,
+                     NUM_CLUSTERS * 2 * sizeof(unsigned int), NULL,
+                     GL_STATIC_COPY);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, light_grid_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
+    // 设置light_index_global_count_ssbo_
+    // Setting up simplest ssbo in the world
+    {
+        glGenBuffers(1, &light_index_global_count_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, light_index_global_count_ssbo_);
+
+        // Every tile takes two unsigned ints one to represent the number of
+        // lights in that grid Another to represent the offset
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int), NULL,
+                     GL_STATIC_COPY);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6,
+                         light_index_global_count_ssbo_);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+}
+
+void Rasterizer::pre_process() {
+    build_aabb_grid_comp_shader_.use();
+    build_aabb_grid_comp_shader_.set_float("zNear",
+                                           Scene::camera->frustum.near_plane);
+    build_aabb_grid_comp_shader_.set_float("zFar",
+                                           Scene::camera->frustum.far_plane);
+    build_aabb_grid_comp_shader_.dispatch(GRID_SIZE_X, GRID_SIZE_Y,
+                                          GRID_SIZE_Z);
+
+    glViewport(0, 0, Scene::width, Scene::height);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(true);
+
+    draw_point_light_shadow();
+}
 
 void Rasterizer::draw_dir_light_shadow() {
     dir_shadow_fbo_.bind();
@@ -97,7 +241,34 @@ void Rasterizer::draw_dir_light_shadow() {
     }
 }
 
-void Rasterizer::draw_point_light_shadow() {}
+void Rasterizer::draw_point_light_shadow() {
+    // Populating depth cube maps for the point light shadows
+    for (unsigned int i = 0; i < num_lights_; ++i) {
+        point_shadow_fbos_[i].bind();
+        point_shadow_fbos_[i].clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
+        PointLight* light = &Scene::point_light[i];
+        light->depth_map_tex_id = point_shadow_fbos_[i].attach_depth_id;
+
+        point_light_shader_.use();
+        point_light_shader_.set_vec3("lightPos", light->position);
+        point_light_shader_.set_float("far_plane", light->z_far);
+
+        glm::mat4 light_matrix, M;
+        glm::mat4 shadow_proj = light->shadow_projection_mat;
+        for (int face = 0; face < 6; face++) {
+            std::string num_s = std::to_string(face);
+            light_matrix = shadow_proj * light->look_at_per_face[face];
+            point_light_shader_.set_mat4(
+                ("shadowMatrices[" + num_s + "]").c_str(), light_matrix);
+        }
+
+        for (auto& model : Scene::entities) {
+            M = model.obj->get_model_matrix();
+            point_light_shader_.set_mat4("M", M);
+            model.render();
+        }
+    }
+}
 
 void Rasterizer::draw_depth_pass() {
     multi_sample_fbo_.bind();
@@ -135,8 +306,7 @@ void Rasterizer::draw_objects() {
 
     glm::mat4 MVP = glm::mat4(1.0);
     glm::mat4 M = glm::mat4(1.0);
-    auto projection =
-        Scene::camera->get_projection(Scene::width, Scene::height);
+    auto projection = Scene::camera->get_projection();
     auto view = Scene::camera->get_view_mat();
     glm::mat4 VP = projection * view;
     glm::mat4 VPCubeMap = projection * glm::mat4(glm::mat3(view));

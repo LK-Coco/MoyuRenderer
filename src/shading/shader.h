@@ -7,6 +7,14 @@
 
 namespace MR {
 
+enum class ShaderCompileType {
+    Vertex,
+    Fragment,
+    Geometry,
+    Program,
+    Compute,
+};
+
 class Shader {
 public:
     Shader() : id_(-1){};

@@ -94,41 +94,41 @@ void Frustum::update_planes(glm::mat4 &view_mat, const glm::vec3 &camera_pos) {
     pl[RIGHT].set_normal_and_point(normal, point);
 }
 
-bool Frustum::check_if_inside(AABB *box) {
+bool Frustum::check_if_inside(const AABB &box) {
     for (int i = 0; i < 6; ++i) {
         int out = 0;
-        out += ((pl[i].distance(glm::vec3(box->min.x, box->min.y, box->min.z)) <
-                 0.0)
-                    ? 1
-                    : 0);
-        out += ((pl[i].distance(glm::vec3(box->max.x, box->min.y, box->min.z)) <
-                 0.0)
-                    ? 1
-                    : 0);
-        out += ((pl[i].distance(glm::vec3(box->min.x, box->max.y, box->min.z)) <
-                 0.0)
-                    ? 1
-                    : 0);
-        out += ((pl[i].distance(glm::vec3(box->max.x, box->max.y, box->min.z)) <
-                 0.0)
-                    ? 1
-                    : 0);
-        out += ((pl[i].distance(glm::vec3(box->min.x, box->min.y, box->max.z)) <
-                 0.0)
-                    ? 1
-                    : 0);
-        out += ((pl[i].distance(glm::vec3(box->max.x, box->min.y, box->max.z)) <
-                 0.0)
-                    ? 1
-                    : 0);
-        out += ((pl[i].distance(glm::vec3(box->min.x, box->max.y, box->max.z)) <
-                 0.0)
-                    ? 1
-                    : 0);
-        out += ((pl[i].distance(glm::vec3(box->max.x, box->max.y, box->max.z)) <
-                 0.0)
-                    ? 1
-                    : 0);
+        out +=
+            ((pl[i].distance(glm::vec3(box.min.x, box.min.y, box.min.z)) < 0.0)
+                 ? 1
+                 : 0);
+        out +=
+            ((pl[i].distance(glm::vec3(box.max.x, box.min.y, box.min.z)) < 0.0)
+                 ? 1
+                 : 0);
+        out +=
+            ((pl[i].distance(glm::vec3(box.min.x, box.max.y, box.min.z)) < 0.0)
+                 ? 1
+                 : 0);
+        out +=
+            ((pl[i].distance(glm::vec3(box.max.x, box.max.y, box.min.z)) < 0.0)
+                 ? 1
+                 : 0);
+        out +=
+            ((pl[i].distance(glm::vec3(box.min.x, box.min.y, box.max.z)) < 0.0)
+                 ? 1
+                 : 0);
+        out +=
+            ((pl[i].distance(glm::vec3(box.max.x, box.min.y, box.max.z)) < 0.0)
+                 ? 1
+                 : 0);
+        out +=
+            ((pl[i].distance(glm::vec3(box.min.x, box.max.y, box.max.z)) < 0.0)
+                 ? 1
+                 : 0);
+        out +=
+            ((pl[i].distance(glm::vec3(box.max.x, box.max.y, box.max.z)) < 0.0)
+                 ? 1
+                 : 0);
 
         if (out == 8) return false;
     }
