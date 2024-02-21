@@ -1,7 +1,7 @@
 # Xmake cache
 .xmake/
 build/
-assets/Cerberus/
+
 
 # MacOS Cache
 .DS_Store
