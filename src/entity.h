@@ -7,7 +7,7 @@
 namespace MR {
 
 struct Entity {
-    void render();
+    void render(bool use);
 
     std::shared_ptr<Object> obj;
     std::shared_ptr<Material> mat;

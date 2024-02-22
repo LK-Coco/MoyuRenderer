@@ -30,6 +30,7 @@ uniform sampler2D emissiveMap;
 uniform sampler2D normalsMap;
 uniform sampler2D lightMap;
 uniform sampler2D metalRoughMap;
+uniform sampler2D roughMap;
 uniform sampler2D shadowMap;
 
 //IBL textures to sample, all pre-computed
@@ -127,7 +128,7 @@ void main(){
     float ao        =  texture(lightMap, fs_in.texCoords).r;
     vec2 metalRough =  texture(metalRoughMap, fs_in.texCoords).bg;
     float metallic  =  metalRough.x;
-    float roughness =  metalRough.y;
+    float roughness =  texture(roughMap, fs_in.texCoords).r;
 
     vec3 albedo = color.rgb;
     float alpha = color .a;
@@ -207,7 +208,7 @@ void main(){
     radianceOut += ambient;
 
     //Adding any emissive if there is an assigned map
-    radianceOut += emissive;
+    //radianceOut += emissive;
 
     if(slices){
         FragColor = vec4(colors[uint(mod(float(zTile), 8.0))], 1.0);

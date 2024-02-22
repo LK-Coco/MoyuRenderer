@@ -75,7 +75,7 @@ Shader::Shader(const char* vertex_path, const char* fragment_path,
         read_shader_file(vertex_path, vertex_code);
         read_shader_file(fragment_path, fragment_code);
         if (geometry_path != nullptr) {
-            read_shader_file(fragment_path, geometry_code);
+            read_shader_file(geometry_path, geometry_code);
         }
     } catch (std::ifstream::failure& e) {
         std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what()

@@ -2,6 +2,7 @@
 
 #include "glm/fwd.hpp"
 #include "glm/glm.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace MR {
 
@@ -23,10 +24,39 @@ struct PointLight : public BaseLight {
     PointLight(glm::vec3 c, glm::vec3 p) {
         color = c;
         position = p;
+
+        default_init();
     }
 
     glm::vec3 position = glm::vec3(0.0f);
     glm::mat4 look_at_per_face[6];
+
+    void default_init() {
+        z_near = 0.1f;
+        z_far = 100.0f;
+
+        shadow_projection_mat =
+            glm::perspective(glm::radians(90.0f), 1.0f, z_near, z_far);
+
+        look_at_per_face[0] =
+            glm::lookAt(position, position + glm::vec3(1.0, 0.0, 0.0),
+                        glm::vec3(0.0, -1.0, 0.0));
+        look_at_per_face[1] =
+            glm::lookAt(position, position + glm::vec3(-1.0, 0.0, 0.0),
+                        glm::vec3(0.0, -1.0, 0.0));
+        look_at_per_face[2] =
+            glm::lookAt(position, position + glm::vec3(0.0, 1.0, 0.0),
+                        glm::vec3(0.0, 0.0, 1.0));
+        look_at_per_face[3] =
+            glm::lookAt(position, position + glm::vec3(1.0, -1.0, 0.0),
+                        glm::vec3(0.0, 0.0, -1.0));
+        look_at_per_face[4] =
+            glm::lookAt(position, position + glm::vec3(0.0, 0.0, 1.0),
+                        glm::vec3(0.0, -1.0, 0.0));
+        look_at_per_face[5] =
+            glm::lookAt(position, position + glm::vec3(0.0, 0.0, -1.0),
+                        glm::vec3(0.0, -1.0, 0.0));
+    }
 };
 
 struct DirLight : public BaseLight {

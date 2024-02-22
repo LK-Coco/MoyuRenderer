@@ -2,9 +2,11 @@
 
 namespace MR {
 
-void Entity::render() {
-    // auto raw = obj.get();
-    // mat->fill_unifrom(*raw);
+void Entity::render(bool use) {
+    if (use) {
+        auto raw = obj.get();
+        mat->fill_unifrom(*raw);
+    }
     obj->render();
 }
 

@@ -17,32 +17,40 @@ Rasterizer::Rasterizer()
     init_ssbo();
 
     pre_process();
+
+    std::cout << "init Rasterizer ok" << std::endl;
 }
 
 void Rasterizer::render() {
     glEnable(GL_DEPTH_TEST);
     glDepthMask(true);
 
+    dir_shadow_fbo_.bind();
+    dir_shadow_fbo_.clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
     draw_dir_light_shadow();
 
-    // draw_point_light_shadow();
+    draw_point_light_shadow();
 
-    draw_depth_pass();
+    // multi_sample_fbo_.bind();
+    // multi_sample_fbo_.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+    //                         glm::vec3(0.0f));
 
-    light_assignment();
+    // draw_depth_pass();
 
-    draw_objects();
+    // light_assignment();
 
-    post_process();
+    // post_process();
 
     fbo_.bind();
     glViewport(0, 0, Scene::width, Scene::height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0f, 0.0f, 0.9f, 1.0f);
 
-    for (auto& entity : Scene::entities) {
-        entity.render();
-    }
+    draw_objects();
+
+    // for (auto& entity : Scene::entities) {
+    //     entity.render(true);
+    // }
 
     fbo_.unbind();
 }
@@ -55,9 +63,7 @@ void Rasterizer::render_skybox(std::shared_ptr<Skybox>& skybox) {
     fbo_.unbind();
 }
 
-GLuint Rasterizer::get_image_id() const {
-    return multi_sample_fbo_.attach_color_id;
-}
+GLuint Rasterizer::get_image_id() const { return fbo_.attach_color_id; }
 
 void Rasterizer::load_shaders() {
     dir_light_shader_ =
@@ -71,6 +77,10 @@ void Rasterizer::load_shaders() {
 
     pbr_cluster_shader_ = Shader("assets/shaders/pbr_cluster_shader.vs",
                                  "assets/shaders/pbr_cluster_shader.fs");
+
+    point_light_shader_ = Shader("assets/shaders/point_light_shader.vs",
+                                 "assets/shaders/point_light_shader.fs",
+                                 "assets/shaders/point_light_shader.gs");
 }
 
 void Rasterizer::init_ssbo() {
@@ -214,9 +224,6 @@ void Rasterizer::pre_process() {
 }
 
 void Rasterizer::draw_dir_light_shadow() {
-    dir_shadow_fbo_.bind();
-    dir_shadow_fbo_.clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
-
     float left = Scene::dir_light.ortho_box_size;
     float right = -left;
     float top = left;
@@ -237,7 +244,7 @@ void Rasterizer::draw_dir_light_shadow() {
             Scene::dir_light.light_space_mat * model.obj->get_model_matrix();
         dir_light_shader_.use();
         dir_light_shader_.set_mat4("lightSpaceMatrix", model_ls);
-        model.render();
+        model.render(false);
     }
 }
 
@@ -265,16 +272,12 @@ void Rasterizer::draw_point_light_shadow() {
         for (auto& model : Scene::entities) {
             M = model.obj->get_model_matrix();
             point_light_shader_.set_mat4("M", M);
-            model.render();
+            model.render(false);
         }
     }
 }
 
 void Rasterizer::draw_depth_pass() {
-    multi_sample_fbo_.bind();
-    multi_sample_fbo_.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
-                            glm::vec3(0.0f));
-
     glm::mat4 projection = glm::perspective(
         glm::radians(Scene::camera->get_zoom()),
         (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
@@ -289,7 +292,10 @@ void Rasterizer::draw_depth_pass() {
         depth_shader_.use();
         depth_shader_.set_mat4("MVP", MVP);
 
-        model.render();
+        depth_shader_.set_int("albedo", 0);
+        material_prop_.albedo_map->bind(0);
+
+        model.render(false);
     }
 }
 
@@ -301,9 +307,6 @@ void Rasterizer::light_assignment() {
 }
 
 void Rasterizer::draw_objects() {
-    glDepthFunc(GL_LEQUAL);
-    glDepthMask(false);
-
     glm::mat4 MVP = glm::mat4(1.0);
     glm::mat4 M = glm::mat4(1.0);
     auto projection = Scene::camera->get_projection();
@@ -345,6 +348,8 @@ void Rasterizer::draw_objects() {
     auto prefilter_map = Resources::get_texture_cube("prefilter_map");
     auto lut_map = Resources::get_texture("brdf_lut_map");
 
+    pbr_cluster_shader_.set_bool("IBL", true);
+
     pbr_cluster_shader_.set_int("irradianceMap",
                                 num_textures + point_light_count + 1);
     irradiance_map->bind(num_textures + point_light_count + 1);
@@ -364,7 +369,24 @@ void Rasterizer::draw_objects() {
         pbr_cluster_shader_.set_mat4("MVP", MVP);
         pbr_cluster_shader_.set_mat4("M", M);
 
-        model.render();
+        pbr_cluster_shader_.set_int("albedoMap", 0);
+        material_prop_.albedo_map->bind(0);
+
+        pbr_cluster_shader_.set_bool("normalMapped", true);
+        pbr_cluster_shader_.set_int("normalsMap", 2);
+        material_prop_.normal_map->bind(2);
+
+        pbr_cluster_shader_.set_bool("aoMapped", true);
+        pbr_cluster_shader_.set_int("lightMap", 3);
+        material_prop_.ao_map->bind(3);
+
+        pbr_cluster_shader_.set_int("metalRoughMap", 4);
+        material_prop_.metallic_map->bind(4);
+
+        pbr_cluster_shader_.set_int("roughMap", 5);
+        material_prop_.roughness_map->bind(5);
+
+        model.render(false);
     }
 }
 

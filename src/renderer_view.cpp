@@ -123,12 +123,12 @@ void RendererView::init(int width, int height) {
         {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(0, 0, -5.0f)});
 
     Scene::dir_light.direction = glm::vec3(0.0f, -5.0f, 1.333f);
-    Scene::dir_light.distance = 100;
+    Scene::dir_light.distance = 10;
     Scene::dir_light.color = glm::vec3(300, 300, 300);
     Scene::dir_light.strength = 1;
     Scene::dir_light.z_near = 1.0;
     Scene::dir_light.z_far = 700;
-    Scene::dir_light.ortho_box_size = 100;
+    Scene::dir_light.ortho_box_size = 10;
     Scene::dir_light.shadow_res = 2048;
 
     // 预处理hdr环境贴图
@@ -184,9 +184,11 @@ void RendererView::init(int width, int height) {
     Scene::entities.push_back(sphere);
     Scene::entities.push_back(quad);
 
+    std::cout << "init scene ok!" << std::endl;
+
     renderer_ = std::make_shared<Rasterizer>();
 
-    std::cout << "init view ok!" << std::endl;
+    std::cout << "init render view ok!" << std::endl;
 }
 
 void RendererView::run() {

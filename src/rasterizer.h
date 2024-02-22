@@ -2,6 +2,7 @@
 #include "renderer.h"
 #include "skybox.h"
 #include "frame_buffer.h"
+#include "shading/material_property.h"
 
 namespace MR {
 
@@ -45,6 +46,8 @@ private:
     Shader cluster_cull_light_shader_;
     Shader pbr_cluster_shader_;
     Shader build_aabb_grid_comp_shader_;
+
+    MaterialProperty material_prop_;
 
     const unsigned int GRID_SIZE_X = 16;
     const unsigned int GRID_SIZE_Y = 9;
