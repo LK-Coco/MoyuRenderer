@@ -60,7 +60,8 @@ void Rasterizer::forward_render() {
     pbr_shader_.set_mat4("projection", Scene::camera->get_projection());
     pbr_shader_.set_mat4("view", Scene::camera->get_view_mat());
     pbr_shader_.set_vec3("camPos", Scene::camera->position);
-    pbr_shader_.set_vec3("dirLightDirection", Scene::dir_light.direction);
+    pbr_shader_.set_vec3("dirLight.direction", Scene::dir_light.direction);
+    pbr_shader_.set_vec3("dirLight.color", Scene::dir_light.color);
 
     for (int i = 0; i < 4; i++) {
         pbr_shader_.set_vec3("lightPositions[" + std::to_string(i) + "]",

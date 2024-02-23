@@ -19,7 +19,11 @@ uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
 
 // lights
-uniform vec3 dirLightDirection;
+struct DirLight{
+    vec3 direction;
+    vec3 color;
+};
+uniform DirLight dirLight;
 uniform vec3 lightPositions[4];
 uniform vec3 lightColors[4];
 
@@ -112,7 +116,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // 取得当前片段在光源视角下的深度
     float currentDepth = projCoords.z;
     // 检查当前片段是否在阴影中
-    float bias = max(0.05 * (1.0 - dot(Normal, dirLightDirection)), 0.005);
+    float bias = max(0.05 * (1.0 - dot(Normal, dirLight.direction)), 0.005);
     float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 
     if(projCoords.z > 1.0)
@@ -121,6 +125,35 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     return shadow;
 }
 
+vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,float shadow, vec3 F0){
+    vec3 L = normalize(-dirLight.direction);
+    vec3 H = normalize(L + V);
+    float NdotV = max(dot(N,V),0.0);
+    float NdotL = max(dot(N,L),0.0);
+    vec3 radianceIn = dirLight.color;
+
+    float NDF = DistributionGGX(N, H, roughness);   
+    float G   = GeometrySmith(N, V, L, roughness);      
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;
+
+    vec3 numerator    = NDF * G * F; 
+    float denominator = 4.0 * NdotV * NdotL + 0.0001; 
+    vec3 specular = numerator / denominator;
+
+    vec3 radiance = (kD * (albedo / PI) + specular) * radianceIn * NdotL;
+    radiance *= (1.0 - shadow);
+
+    return radiance;
+}
+
+
+
+
+//vec3 CalcPointLight(){}
 
 // ----------------------------------------------------------------------------
 void main()
@@ -134,8 +167,6 @@ void main()
     vec3 N = getNormalFromMap();
     vec3 V = normalize(camPos - WorldPos);
     vec3 R = reflect(-V, N); 
-
-    float shadow = ShadowCalculation(FragPosLightSpace);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
@@ -179,9 +210,12 @@ void main()
         float NdotL = max(dot(N, L), 0.0);        
 
         // add to outgoing radiance Lo
-        Lo += (kD * albedo / PI + specular * (1.0 - shadow)) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }   
     
+    float shadow = ShadowCalculation(FragPosLightSpace);
+    Lo += CalcDirLight(V,N,albedo,metallic,roughness,shadow,F0);
+
     // ambient lighting (we now use IBL as the ambient term)
     vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
@@ -198,7 +232,7 @@ void main()
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-    vec3 ambient = (kD * diffuse + specular * (1.0 - shadow)) * ao;
+    vec3 ambient = (kD * diffuse + specular) * ao;
     
     vec3 color = ambient  + Lo;
 
