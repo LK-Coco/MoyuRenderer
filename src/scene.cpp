@@ -1,6 +1,7 @@
 #include "scene.h"
 #include <memory>
 #include "nlohmann_json.h"
+#include <iostream>
 #include <fstream>
 #include "object/sphere.h"
 #include "object/quad.h"
@@ -60,7 +61,16 @@ void Scene::load_json(const char* file_path) {
             glm::vec3((float)json_rotate[0], (float)json_rotate[1],
                       (float)json_rotate[2]);
         entity.obj->angle = glm::radians((float)json_model["angle"]);
-        entity.material_prop.IBL = json_model["material_prop"]["IBL"];
+
+        nlohmann::json json_prop = json_model["material_prop"];
+        entity.material_prop.IBL = json_prop["IBL"];
+        entity.material_prop.albedo_map_path = json_prop["albedo_map_path"];
+        entity.material_prop.normal_map_path = json_prop["normal_map_path"];
+        entity.material_prop.metallic_map_path = json_prop["metallic_map_path"];
+        entity.material_prop.roughness_map_path =
+            json_prop["roughness_map_path"];
+        entity.material_prop.ao_map_path = json_prop["ao_map_path"];
+        entity.material_prop.init_map();
 
         entities.push_back(entity);
     }

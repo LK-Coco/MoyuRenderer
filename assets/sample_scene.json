@@ -26,7 +26,12 @@
             ],
             "angle": 0.0,
             "material_prop": {
-                "IBL": false
+                "IBL": false,
+                "albedo_map_path": "assets/rusted_iron/albedo.png",
+                "normal_map_path": "assets/rusted_iron/normal.png",
+                "metallic_map_path": "assets/rusted_iron/metallic.png",
+                "roughness_map_path": "assets/rusted_iron/roughness.png",
+                "ao_map_path": "assets/rusted_iron/ao.png"
             }
         },
         {
@@ -48,7 +53,12 @@
             ],
             "angle": 90.0,
             "material_prop": {
-                "IBL": false
+                "IBL": false,
+                "albedo_map_path": "assets/brick_wall/albedo.png",
+                "normal_map_path": "assets/brick_wall/normal.png",
+                "metallic_map_path": "assets/brick_wall/metallic.png",
+                "roughness_map_path": "assets/brick_wall/roughness.png",
+                "ao_map_path": "assets/brick_wall/ao.png"
             }
         }
     ],
@@ -60,14 +70,14 @@
         ],
         "distance": 10.0,
         "color": [
-            1.0,
-            1.0,
-            1.0
+            300.0,
+            300.0,
+            300.0
         ],
         "strength": 1.0,
         "z_near": 1.0,
         "z_far": 7.5,
-        "ortho_size": 20.0,
+        "ortho_size": 10.0,
         "shadow_res": 2048
     },
     "point_lights": [

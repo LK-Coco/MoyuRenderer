@@ -157,7 +157,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 // }
 
 vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,float shadow, vec3 F0){
-    vec3 L = normalize(-dirLight.direction);
+    vec3 L = normalize(dirLight.direction);
     vec3 H = normalize(L + V);
     float NdotV = max(dot(N,V),0.0);
     float NdotL = max(dot(N,L),0.0);
@@ -175,8 +175,8 @@ vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,f
     float denominator = 4.0 * NdotV * NdotL + 0.0001; 
     vec3 specular = numerator / denominator;
 
-    vec3 radiance = (kD * (albedo / PI) + specular) * radianceIn * NdotL;
-    radiance *= (1.0 - shadow);
+    vec3 radiance =  albedo;//(kD * (albedo / PI) + specular) * radianceIn * NdotL;
+    //radiance *= (1.0 - shadow);
 
     return radiance;
 }
@@ -246,7 +246,7 @@ void main()
     
     float shadow = ShadowCalculation(FragPosLightSpace);
     vec3 dirLo= CalcDirLight(V,N,albedo,metallic,roughness,shadow,F0);
-    Lo = vec3(0.0);
+
     Lo += dirLo;
 
     vec3 ambient = vec3(0.025) * albedo;
@@ -278,6 +278,6 @@ void main()
     // gamma correct
     color = pow(color, vec3(1.0/2.2)); 
 
-    FragColor = vec4(color , 1.0);
+    FragColor = vec4(vec3(albedo) , 1.0);
 }
 

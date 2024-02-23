@@ -5,31 +5,33 @@
 namespace MR {
 
 struct MaterialProperty {
-    MaterialProperty() {
-        albedo_map = Resources::get_texture("albedo_map");
+    MaterialProperty() {}
+
+    void init_map() {
+        albedo_map = Resources::get_texture(albedo_map_path);
         if (albedo_map == nullptr) {
             // 临时
             albedo_map =
-                Resources::load_texture("albedo_map", "assets/gold/albedo.png");
+                Resources::load_texture(albedo_map_path, albedo_map_path);
         }
-        normal_map = Resources::get_texture("normal_map");
+        normal_map = Resources::get_texture(normal_map_path);
         if (normal_map == nullptr) {
             normal_map =
-                Resources::load_texture("normal_map", "assets/gold/normal.png");
+                Resources::load_texture(normal_map_path, normal_map_path);
         }
-        metallic_map = Resources::get_texture("metallic_map");
+        metallic_map = Resources::get_texture(metallic_map_path);
         if (metallic_map == nullptr) {
-            metallic_map = Resources::load_texture("metallic_map",
-                                                   "assets/gold/metallic.png");
+            metallic_map =
+                Resources::load_texture(metallic_map_path, metallic_map_path);
         }
-        roughness_map = Resources::get_texture("roughness_map");
+        roughness_map = Resources::get_texture(roughness_map_path);
         if (roughness_map == nullptr) {
-            roughness_map = Resources::load_texture(
-                "roughness_map", "assets/gold/roughness.png");
+            roughness_map =
+                Resources::load_texture(roughness_map_path, roughness_map_path);
         }
-        ao_map = Resources::get_texture("ao_map");
+        ao_map = Resources::get_texture(ao_map_path);
         if (ao_map == nullptr) {
-            ao_map = Resources::load_texture("ao_map", "assets/gold/ao.png");
+            ao_map = Resources::load_texture(ao_map_path, ao_map_path);
         }
 
         irradiance_map = Resources::get_texture_cube("irradiance_map");
@@ -49,6 +51,11 @@ struct MaterialProperty {
     Texture* lut_map;
 
     bool IBL = false;
+    std::string albedo_map_path = "assets/gold/albedo.png";
+    std::string normal_map_path = "assets/gold/normal.png";
+    std::string metallic_map_path = "assets/gold/metallic.png";
+    std::string roughness_map_path = "assets/gold/roughness.png";
+    std::string ao_map_path = "assets/gold/ao.png";
 };
 
 }  // namespace MR

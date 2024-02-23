@@ -46,6 +46,9 @@ void Rasterizer::render() {
 GLuint Rasterizer::get_image_id() const { return fbo_.attach_color_id; }
 
 void Rasterizer::forward_render() {
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(true);
+
     dir_shadow_fbo_.bind();
     dir_shadow_fbo_.clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
     draw_dir_light_shadow();
@@ -79,23 +82,26 @@ void Rasterizer::forward_render() {
     pbr_shader_.set_int("prefilterMap", 6);
     pbr_shader_.set_int("brdfLUT", 7);
     pbr_shader_.set_int("dirShadowMap", 8);
-    material_prop_.albedo_map->bind(0);
-    material_prop_.normal_map->bind(1);
-    material_prop_.metallic_map->bind(2);
-    material_prop_.roughness_map->bind(3);
-    material_prop_.ao_map->bind(4);
-    material_prop_.irradiance_map->bind(5);
-    material_prop_.prefilter_map->bind(6);
-    material_prop_.lut_map->bind(7);
+
     glActiveTexture(GL_TEXTURE0 + 8);
     glBindTexture(GL_TEXTURE_2D, Scene::dir_light.depth_map_tex_id);
 
     for (auto& entity : Scene::entities) {
         auto model = entity.obj->get_model_matrix();
+        auto& prop = entity.material_prop;
         pbr_shader_.set_bool("IBL", entity.material_prop.IBL);
         pbr_shader_.set_mat4("model", model);
         pbr_shader_.set_mat3("normalMatrix",
                              glm::transpose(glm::inverse(glm::mat3(model))));
+
+        prop.albedo_map->bind(0);
+        prop.normal_map->bind(1);
+        prop.metallic_map->bind(2);
+        prop.roughness_map->bind(3);
+        prop.ao_map->bind(4);
+        prop.irradiance_map->bind(5);
+        prop.prefilter_map->bind(6);
+        prop.lut_map->bind(7);
 
         entity.render(false);
     }
@@ -344,7 +350,7 @@ void Rasterizer::draw_depth_pass() {
         depth_shader_.set_mat4("MVP", MVP);
 
         depth_shader_.set_int("albedo", 0);
-        material_prop_.albedo_map->bind(0);
+        model.material_prop.albedo_map->bind(0);
 
         model.render(false);
     }
@@ -415,27 +421,28 @@ void Rasterizer::draw_objects() {
 
     for (auto& model : Scene::entities) {
         M = model.obj->get_model_matrix();
+        auto& prop = model.material_prop;
         MVP = VP * M;
 
         pbr_cluster_shader_.set_mat4("MVP", MVP);
         pbr_cluster_shader_.set_mat4("M", M);
 
         pbr_cluster_shader_.set_int("albedoMap", 0);
-        material_prop_.albedo_map->bind(0);
+        prop.albedo_map->bind(0);
 
         pbr_cluster_shader_.set_bool("normalMapped", true);
         pbr_cluster_shader_.set_int("normalsMap", 2);
-        material_prop_.normal_map->bind(2);
+        prop.normal_map->bind(2);
 
         pbr_cluster_shader_.set_bool("aoMapped", true);
         pbr_cluster_shader_.set_int("lightMap", 3);
-        material_prop_.ao_map->bind(3);
+        prop.ao_map->bind(3);
 
         pbr_cluster_shader_.set_int("metalRoughMap", 4);
-        material_prop_.metallic_map->bind(4);
+        prop.metallic_map->bind(4);
 
         pbr_cluster_shader_.set_int("roughMap", 5);
-        material_prop_.roughness_map->bind(5);
+        prop.roughness_map->bind(5);
 
         model.render(false);
     }

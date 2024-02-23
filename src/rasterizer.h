@@ -58,8 +58,6 @@ private:
     Shader pbr_cluster_shader_;
     Shader build_aabb_grid_comp_shader_;
 
-    MaterialProperty material_prop_;
-
     const unsigned int GRID_SIZE_X = 16;
     const unsigned int GRID_SIZE_Y = 9;
     const unsigned int GRID_SIZE_Z = 24;
