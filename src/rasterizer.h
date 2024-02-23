@@ -6,15 +6,20 @@
 
 namespace MR {
 
+enum class RenderMode {
+    Forward,
+    Deferred,
+};
+
 class Rasterizer : public Renderer {
 public:
     Rasterizer();
 
     void render() override;
 
-    void render_skybox(std::shared_ptr<Skybox>& skybox) override;
-
     GLuint get_image_id() const override;
+
+    RenderMode render_mode = RenderMode::Forward;
 
 private:
     void load_shaders();
@@ -22,6 +27,10 @@ private:
     void init_ssbo();
 
     void pre_process();
+
+    void forward_render();
+
+    void deferred_render();
 
     void draw_point_light_shadow();
 
@@ -40,10 +49,12 @@ private:
     MultiSampledFBO multi_sample_fbo_;
     PointShadowBufferFBO* point_shadow_fbos_;
 
+    Shader skybox_shader_;
     Shader dir_light_shader_;
     Shader point_light_shader_;
     Shader depth_shader_;
     Shader cluster_cull_light_shader_;
+    Shader pbr_shader_;
     Shader pbr_cluster_shader_;
     Shader build_aabb_grid_comp_shader_;
 

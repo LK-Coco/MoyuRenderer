@@ -31,6 +31,10 @@ struct MaterialProperty {
         if (ao_map == nullptr) {
             ao_map = Resources::load_texture("ao_map", "assets/gold/ao.png");
         }
+
+        irradiance_map = Resources::get_texture_cube("irradiance_map");
+        prefilter_map = Resources::get_texture_cube("prefilter_map");
+        lut_map = Resources::get_texture("brdf_lut_map");
     }
 
     virtual void display_ui() {}
@@ -40,6 +44,9 @@ struct MaterialProperty {
     Texture* metallic_map;
     Texture* roughness_map;
     Texture* ao_map;
+    TextureCube* irradiance_map;
+    TextureCube* prefilter_map;
+    Texture* lut_map;
 };
 
 }  // namespace MR

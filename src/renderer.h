@@ -12,7 +12,7 @@ public:
     Renderer(){};
 
     virtual void render(){};
-    virtual void render_skybox(std::shared_ptr<Skybox>& skybox){};
+
     virtual GLuint get_image_id() const { return 0; };
 };
 

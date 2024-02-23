@@ -112,6 +112,8 @@ void RendererView::init(int width, int height) {
     //  std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
     //  std::make_shared<Model>("assets/Cerberus/Cerberus_LP.FBX");
 
+    Scene::load_json("assets/sample_scene.json");
+
     // 设置灯光
     Scene::point_light.push_back(
         {glm::vec3(300.0f, 0.0f, 0.0f), glm::vec3(0, 0, 5.0f)});
@@ -122,14 +124,14 @@ void RendererView::init(int width, int height) {
     Scene::point_light.push_back(
         {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(0, 0, -5.0f)});
 
-    Scene::dir_light.direction = glm::vec3(0.0f, -5.0f, 1.333f);
-    Scene::dir_light.distance = 10;
-    Scene::dir_light.color = glm::vec3(300, 300, 300);
-    Scene::dir_light.strength = 1;
-    Scene::dir_light.z_near = 1.0;
-    Scene::dir_light.z_far = 700;
-    Scene::dir_light.ortho_box_size = 10;
-    Scene::dir_light.shadow_res = 2048;
+    // Scene::dir_light.direction = glm::vec3(0.0f, 5.0f, 1.333f);
+    // Scene::dir_light.distance = 10;
+    // Scene::dir_light.color = glm::vec3(300, 300, 300);
+    // Scene::dir_light.strength = 1;
+    // Scene::dir_light.z_near = 1.0;
+    // Scene::dir_light.z_far = 700;
+    // Scene::dir_light.ortho_box_size = 10;
+    // Scene::dir_light.shadow_res = 2048;
 
     // 预处理hdr环境贴图
     auto fbo = CaptureFBO(512, 512);
@@ -167,16 +169,14 @@ void RendererView::init(int width, int height) {
         Resources::clac_brdf_lut("brdf_lut_map", brdf_lut_shader_, fbo);
 
     // 设置天空盒
-    skybox_shader_ = std::make_shared<Shader>(
-        "assets/shaders/skybox/skybox.vs", "assets/shaders/skybox/skybox.fs");
     Scene::skybox = std::make_shared<Skybox>();
     Scene::skybox->set_hdr_cube_map(hdr_cubemap);
     // 设置Material
     cur_material_ = 1;
-    switch_material();
+    // switch_material();
 
-    Entity sphere{std::make_shared<Sphere>(), obj_mat_};
-    Entity quad{std::make_shared<Quad>(), obj_mat_};
+    Entity sphere{std::make_shared<Sphere>()};
+    Entity quad{std::make_shared<Quad>()};
     quad.obj->position.y = -1.5f;
     quad.obj->scale = glm::vec3(3, 3, 1);
     quad.obj->rotation_axis = glm::vec3(1, 0, 0);
@@ -211,13 +211,6 @@ void RendererView::run() {
         glm::mat4 view = Scene::camera->get_view_mat();
 
         renderer_->render();
-
-        // 天空盒
-        // view = glm::mat4(glm::mat3(view));  // 移除translation参数
-        skybox_shader_->use();
-        skybox_shader_->set_mat4("projection", projection);
-        skybox_shader_->set_mat4("view", view);
-        renderer_->render_skybox(Scene::skybox);
 
         // 开始ImGui框架新的帧
         ImGui_ImplOpenGL3_NewFrame();
@@ -304,10 +297,11 @@ void RendererView::render_right_side() {
                                  IM_ARRAYSIZE(material))) {
                     // switch_material();
                 }
-                obj_mat_->display_ui();
-                // ImGui::DragFloat("Camera Pos X", &Scene::camera->position.x);
-                // ImGui::DragFloat("Camera Pos Y", &Scene::camera->position.y);
-                // ImGui::DragFloat("Camera Pos Z", &Scene::camera->position.z);
+                // obj_mat_->display_ui();
+                //  ImGui::DragFloat("Camera Pos X",
+                //  &Scene::camera->position.x); ImGui::DragFloat("Camera Pos
+                //  Y", &Scene::camera->position.y); ImGui::DragFloat("Camera
+                //  Pos Z", &Scene::camera->position.z);
 
                 ImGui::EndTabItem();
             }

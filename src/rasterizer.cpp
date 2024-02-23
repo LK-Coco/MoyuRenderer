@@ -22,14 +22,15 @@ Rasterizer::Rasterizer()
 }
 
 void Rasterizer::render() {
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(true);
+    switch (render_mode) {
+        case RenderMode::Forward: forward_render(); break;
+        case RenderMode::Deferred: deferred_render(); break;
+    }
 
-    dir_shadow_fbo_.bind();
-    dir_shadow_fbo_.clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
-    draw_dir_light_shadow();
+    // glEnable(GL_DEPTH_TEST);
+    // glDepthMask(true);
 
-    draw_point_light_shadow();
+    // draw_point_light_shadow();
 
     // multi_sample_fbo_.bind();
     // multi_sample_fbo_.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
@@ -40,32 +41,80 @@ void Rasterizer::render() {
     // light_assignment();
 
     // post_process();
+}
+
+GLuint Rasterizer::get_image_id() const { return fbo_.attach_color_id; }
+
+void Rasterizer::forward_render() {
+    dir_shadow_fbo_.bind();
+    dir_shadow_fbo_.clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
+    draw_dir_light_shadow();
 
     fbo_.bind();
     glViewport(0, 0, Scene::width, Scene::height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0f, 0.0f, 0.9f, 1.0f);
 
-    draw_objects();
+    pbr_shader_.use();
+    pbr_shader_.set_mat4("lightSpaceMatrix", Scene::dir_light.light_space_mat);
+    pbr_shader_.set_mat4("projection", Scene::camera->get_projection());
+    pbr_shader_.set_mat4("view", Scene::camera->get_view_mat());
+    pbr_shader_.set_vec3("camPos", Scene::camera->position);
+    pbr_shader_.set_vec3("dirLightDirection", Scene::dir_light.direction);
 
-    // for (auto& entity : Scene::entities) {
-    //     entity.render(true);
-    // }
+    for (int i = 0; i < 4; i++) {
+        pbr_shader_.set_vec3("lightPositions[" + std::to_string(i) + "]",
+                             Scene::point_light[i].position);
+        pbr_shader_.set_vec3("lightColors[" + std::to_string(i) + "]",
+                             Scene::point_light[i].color);
+    }
+
+    pbr_shader_.set_int("albedoMap", 0);
+    pbr_shader_.set_int("normalMap", 1);
+    pbr_shader_.set_int("metallicMap", 2);
+    pbr_shader_.set_int("roughnessMap", 3);
+    pbr_shader_.set_int("aoMap", 4);
+    pbr_shader_.set_int("irradianceMap", 5);
+    pbr_shader_.set_int("prefilterMap", 6);
+    pbr_shader_.set_int("brdfLUT", 7);
+    pbr_shader_.set_int("dirShadowMap", 8);
+    material_prop_.albedo_map->bind(0);
+    material_prop_.normal_map->bind(1);
+    material_prop_.metallic_map->bind(2);
+    material_prop_.roughness_map->bind(3);
+    material_prop_.ao_map->bind(4);
+    material_prop_.irradiance_map->bind(5);
+    material_prop_.prefilter_map->bind(6);
+    material_prop_.lut_map->bind(7);
+    glActiveTexture(GL_TEXTURE0 + 8);
+    glBindTexture(GL_TEXTURE_2D, Scene::dir_light.depth_map_tex_id);
+
+    for (auto& entity : Scene::entities) {
+        auto model = entity.obj->get_model_matrix();
+        pbr_shader_.set_mat4("model", model);
+        pbr_shader_.set_mat3("normalMatrix",
+                             glm::transpose(glm::inverse(glm::mat3(model))));
+
+        entity.render(false);
+    }
+
+    skybox_shader_.use();
+    skybox_shader_.set_mat4("projection", Scene::camera->get_projection());
+    skybox_shader_.set_mat4("view", Scene::camera->get_view_mat());
+
+    Scene::skybox->draw();
 
     fbo_.unbind();
 }
 
-void Rasterizer::render_skybox(std::shared_ptr<Skybox>& skybox) {
-    fbo_.bind();
-
-    skybox->draw();
-
-    fbo_.unbind();
-}
-
-GLuint Rasterizer::get_image_id() const { return fbo_.attach_color_id; }
+void Rasterizer::deferred_render() {}
 
 void Rasterizer::load_shaders() {
+    skybox_shader_ = Shader("assets/shaders/skybox/skybox.vs",
+                            "assets/shaders/skybox/skybox.fs");
+    pbr_shader_ =
+        Shader("assets/shaders/pbr/pbr.vs", "assets/shaders/pbr/pbr.fs");
+
     dir_light_shader_ =
         Shader("assets/shaders/dir_light.vs", "assets/shaders/dir_light.fs");
 
@@ -234,8 +283,8 @@ void Rasterizer::draw_dir_light_shadow() {
         glm::ortho(left, right, bottom, top, Scene::dir_light.z_near,
                    Scene::dir_light.z_far);
     Scene::dir_light.light_view =
-        glm::lookAt(100.0f * -Scene::dir_light.direction,
-                    glm::vec3(0.0f, .0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::lookAt(Scene::dir_light.direction, glm::vec3(0.0f, .0f, 0.0f),
+                    glm::vec3(0.0f, 1.0f, 0.0f));
     Scene::dir_light.light_space_mat =
         Scene::dir_light.shadow_projection_mat * Scene::dir_light.light_view;
 

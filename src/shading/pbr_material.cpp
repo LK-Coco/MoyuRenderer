@@ -84,9 +84,7 @@ void PBRMaterial::display_ui() {
 }
 
 void PBRMaterial::fill_unifrom(const Object& obj) {
-    glm::mat4 projection = glm::perspective(
-        glm::radians(Scene::camera->get_zoom()),
-        (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
+    glm::mat4 projection = Scene::camera->get_projection();
     glm::mat4 view = Scene::camera->get_view_mat();
 
     shader_->use();

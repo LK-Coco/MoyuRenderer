@@ -6,7 +6,7 @@ namespace MR {
 
 GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
               std::uint32_t width, std::uint32_t height) {
-    const float border_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+    const float border_color[] = {1.0f, 1.0f, 1.0f, 1.0f};
 
     GLuint tex_id;
     glGenTextures(1, &tex_id);

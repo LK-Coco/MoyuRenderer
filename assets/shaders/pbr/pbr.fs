@@ -4,6 +4,7 @@ out vec4 FragColor;
 in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
+in vec4 FragPosLightSpace;
 
 // material parameters
 uniform sampler2D albedoMap;
@@ -18,8 +19,12 @@ uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
 
 // lights
+uniform vec3 dirLightDirection;
 uniform vec3 lightPositions[4];
 uniform vec3 lightColors[4];
+
+// shadow
+uniform sampler2D dirShadowMap;
 
 uniform vec3 camPos;
 
@@ -94,6 +99,29 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }   
 
+
+// 计算阴影
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+    // 执行透视除法
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // 变换到[0,1]的范围
+    projCoords = projCoords * 0.5 + 0.5;
+    // 取得最近点的深度(使用[0,1]范围下的fragPosLight当坐标)
+    float closestDepth = texture(dirShadowMap, projCoords.xy).r; 
+    // 取得当前片段在光源视角下的深度
+    float currentDepth = projCoords.z;
+    // 检查当前片段是否在阴影中
+    float bias = max(0.05 * (1.0 - dot(Normal, dirLightDirection)), 0.005);
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+
+    if(projCoords.z > 1.0)
+        shadow = 0.0;
+
+    return shadow;
+}
+
+
 // ----------------------------------------------------------------------------
 void main()
 {		
@@ -106,6 +134,8 @@ void main()
     vec3 N = getNormalFromMap();
     vec3 V = normalize(camPos - WorldPos);
     vec3 R = reflect(-V, N); 
+
+    float shadow = ShadowCalculation(FragPosLightSpace);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
@@ -149,7 +179,7 @@ void main()
         float NdotL = max(dot(N, L), 0.0);        
 
         // add to outgoing radiance Lo
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        Lo += (kD * albedo / PI + specular * (1.0 - shadow)) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }   
     
     // ambient lighting (we now use IBL as the ambient term)
@@ -168,9 +198,9 @@ void main()
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-    vec3 ambient = (kD * diffuse + specular) * ao;
+    vec3 ambient = (kD * diffuse + specular * (1.0 - shadow)) * ao;
     
-    vec3 color = ambient + Lo;
+    vec3 color = ambient  + Lo;
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
