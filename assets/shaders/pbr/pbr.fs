@@ -14,6 +14,7 @@ uniform sampler2D roughnessMap;
 uniform sampler2D aoMap;
 
 // IBL
+uniform bool IBL;
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
@@ -111,19 +112,49 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // 变换到[0,1]的范围
     projCoords = projCoords * 0.5 + 0.5;
-    // 取得最近点的深度(使用[0,1]范围下的fragPosLight当坐标)
-    float closestDepth = texture(dirShadowMap, projCoords.xy).r; 
+
+    float shadow = 0.0;
+
+    vec2 texelSize = 1.0 / textureSize(dirShadowMap,0);
+    vec3 normal = normalize(Normal);
     // 取得当前片段在光源视角下的深度
     float currentDepth = projCoords.z;
-    // 检查当前片段是否在阴影中
-    float bias = max(0.05 * (1.0 - dot(Normal, dirLight.direction)), 0.005);
-    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+    float bias = max(0.05 * (1.0 - dot(normal, dirLight.direction)), 0.005);
+
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(dirShadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth ? 0.111111 : 0.0;        
+        }       
+    }
+
+    // 取得最近点的深度(使用[0,1]范围下的fragPosLight当坐标)
+    //float closestDepth = texture(dirShadowMap, projCoords.xy).r; 
 
     if(projCoords.z > 1.0)
         shadow = 0.0;
 
     return shadow;
 }
+
+// float ShadowCalculation(vec4 fragPosLightSpace)
+// {
+//     // 执行透视除法
+//     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+//     // 变换到[0,1]的范围
+//     projCoords = projCoords * 0.5 + 0.5;
+//     // 取得最近点的深度(使用[0,1]范围下的fragPosLight当坐标)
+//     float closestDepth = texture(dirShadowMap, projCoords.xy).r; 
+//     // 取得当前片段在光源视角下的深度
+//     float currentDepth = projCoords.z;
+//     // 检查当前片段是否在阴影中
+//     float bias = max(0.05 * (1.0 - dot(Normal, dirLight.direction)), 0.005);
+//     float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+
+//     return shadow;
+// }
 
 vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,float shadow, vec3 F0){
     vec3 L = normalize(-dirLight.direction);
@@ -214,25 +245,31 @@ void main()
     }   
     
     float shadow = ShadowCalculation(FragPosLightSpace);
-    Lo += CalcDirLight(V,N,albedo,metallic,roughness,shadow,F0);
+    vec3 dirLo= CalcDirLight(V,N,albedo,metallic,roughness,shadow,F0);
+    Lo = vec3(0.0);
+    Lo += dirLo;
 
-    // ambient lighting (we now use IBL as the ambient term)
-    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    vec3 ambient = vec3(0.025) * albedo;
+    if(IBL){
+        // ambient lighting (we now use IBL as the ambient term)
+        vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-    vec3 kS = F;
-    vec3 kD = 1.0 - kS;
-    kD *= 1.0 - metallic;	  
-    
-    vec3 irradiance = texture(irradianceMap, N).rgb;
-    vec3 diffuse      = irradiance * albedo;
-    
-    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
-    const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;    
-    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+        vec3 kS = F;
+        vec3 kD = 1.0 - kS;
+        kD *= 1.0 - metallic;	  
 
-    vec3 ambient = (kD * diffuse + specular) * ao;
+        vec3 irradiance = texture(irradianceMap, N).rgb;
+        vec3 diffuse      = irradiance * albedo;
+
+        // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+        const float MAX_REFLECTION_LOD = 4.0;
+        vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;    
+        vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+        vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+        ambient = (kD * diffuse + specular);
+    }
+    ambient *= ao;
     
     vec3 color = ambient  + Lo;
 

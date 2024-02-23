@@ -2,6 +2,8 @@
 #include <memory>
 #include "nlohmann_json.h"
 #include <fstream>
+#include "object/sphere.h"
+#include "object/quad.h"
 
 namespace MR {
 
@@ -25,11 +27,45 @@ std::vector<Entity> Scene::entities;
 
 DirLight Scene::dir_light;
 
+Entity get_entity(const std::string& name) {
+    if (name == "sphere") {
+        return Entity(std::make_shared<Sphere>());
+    } else if (name == "quad") {
+        return Entity(std::make_shared<Quad>());
+    }
+
+    return Entity(std::make_shared<Sphere>());
+}
+
 void Scene::load_json(const char* file_path) {
     nlohmann::json scene_json;
     std::ifstream file(file_path);
     file >> scene_json;
 
+    // Models
+    nlohmann::json json_models = scene_json["models"];
+    unsigned int models_size = json_models.size();
+    for (int i = 0; i < models_size; ++i) {
+        nlohmann::json json_model = json_models[i];
+
+        auto entity = get_entity(json_model["mesh"]);
+        nlohmann::json json_pos = json_model["position"];
+        entity.obj->position = glm::vec3((float)json_pos[0], (float)json_pos[1],
+                                         (float)json_pos[2]);
+        nlohmann::json json_scale = json_model["scale"];
+        entity.obj->scale = glm::vec3(
+            (float)json_scale[0], (float)json_scale[1], (float)json_scale[2]);
+        nlohmann::json json_rotate = json_model["rotation_axis"];
+        entity.obj->rotation_axis =
+            glm::vec3((float)json_rotate[0], (float)json_rotate[1],
+                      (float)json_rotate[2]);
+        entity.obj->angle = glm::radians((float)json_model["angle"]);
+        entity.material_prop.IBL = json_model["material_prop"]["IBL"];
+
+        entities.push_back(entity);
+    }
+
+    // 平行光
     nlohmann::json json_dir_light = scene_json["dir_light"];
     nlohmann::json json_direction = json_dir_light["dir"];
     dir_light.direction =

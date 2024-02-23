@@ -92,6 +92,7 @@ void Rasterizer::forward_render() {
 
     for (auto& entity : Scene::entities) {
         auto model = entity.obj->get_model_matrix();
+        pbr_shader_.set_bool("IBL", entity.material_prop.IBL);
         pbr_shader_.set_mat4("model", model);
         pbr_shader_.set_mat3("normalMatrix",
                              glm::transpose(glm::inverse(glm::mat3(model))));

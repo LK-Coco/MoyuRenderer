@@ -47,6 +47,8 @@ struct MaterialProperty {
     TextureCube* irradiance_map;
     TextureCube* prefilter_map;
     Texture* lut_map;
+
+    bool IBL = false;
 };
 
 }  // namespace MR

@@ -18,12 +18,43 @@
                 1.0,
                 1.0,
                 1.0
-            ]
+            ],
+            "rotation_axis": [
+                1,
+                0,
+                0
+            ],
+            "angle": 0.0,
+            "material_prop": {
+                "IBL": false
+            }
+        },
+        {
+            "mesh": "quad",
+            "position": [
+                0.0,
+                -1.5,
+                0.0
+            ],
+            "scale": [
+                3,
+                3,
+                1
+            ],
+            "rotation_axis": [
+                1,
+                0,
+                0
+            ],
+            "angle": 90.0,
+            "material_prop": {
+                "IBL": false
+            }
         }
     ],
     "dir_light": {
         "dir": [
-            2.0,
+            -2.0,
             4.0,
             -1.0
         ],
@@ -36,7 +67,7 @@
         "strength": 1.0,
         "z_near": 1.0,
         "z_far": 7.5,
-        "ortho_size": 10.0,
+        "ortho_size": 20.0,
         "shadow_res": 2048
     },
     "point_lights": [

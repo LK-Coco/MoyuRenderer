@@ -112,8 +112,6 @@ void RendererView::init(int width, int height) {
     //  std::make_shared<Model>("assets/DamagedHelmet/DamagedHelmet.gltf");
     //  std::make_shared<Model>("assets/Cerberus/Cerberus_LP.FBX");
 
-    Scene::load_json("assets/sample_scene.json");
-
     // 设置灯光
     Scene::point_light.push_back(
         {glm::vec3(300.0f, 0.0f, 0.0f), glm::vec3(0, 0, 5.0f)});
@@ -175,15 +173,15 @@ void RendererView::init(int width, int height) {
     cur_material_ = 1;
     // switch_material();
 
-    Entity sphere{std::make_shared<Sphere>()};
-    Entity quad{std::make_shared<Quad>()};
-    quad.obj->position.y = -1.5f;
-    quad.obj->scale = glm::vec3(3, 3, 1);
-    quad.obj->rotation_axis = glm::vec3(1, 0, 0);
-    quad.obj->angle = glm::radians(90.0f);
-    Scene::entities.push_back(sphere);
-    Scene::entities.push_back(quad);
-
+    // Entity sphere{std::make_shared<Sphere>()};
+    // Entity quad{std::make_shared<Quad>()};
+    // quad.obj->position.y = -1.5f;
+    // quad.obj->scale = glm::vec3(3, 3, 1);
+    // quad.obj->rotation_axis = glm::vec3(1, 0, 0);
+    // quad.obj->angle = glm::radians(90.0f);
+    // Scene::entities.push_back(sphere);
+    // Scene::entities.push_back(quad);
+    Scene::load_json("assets/sample_scene.json");
     std::cout << "init scene ok!" << std::endl;
 
     renderer_ = std::make_shared<Rasterizer>();
