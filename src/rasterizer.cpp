@@ -48,6 +48,8 @@ GLuint Rasterizer::get_image_id() const { return fbo_.attach_color_id; }
 void Rasterizer::forward_render() {
     glEnable(GL_DEPTH_TEST);
     glDepthMask(true);
+    // 启用面剔除
+    glEnable(GL_CULL_FACE);
 
     dir_shadow_fbo_.bind();
     dir_shadow_fbo_.clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
@@ -105,6 +107,9 @@ void Rasterizer::forward_render() {
 
         entity.render(false);
     }
+
+    // 关闭面剔除
+    glDisable(GL_CULL_FACE);
 
     skybox_shader_.use();
     skybox_shader_.set_mat4("projection", Scene::camera->get_projection());
