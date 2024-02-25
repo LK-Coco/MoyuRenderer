@@ -14,7 +14,7 @@ Rasterizer::Rasterizer()
 
     load_shaders();
 
-    init_ssbo();
+    // init_ssbo();
 
     pre_process();
 
@@ -54,6 +54,7 @@ void Rasterizer::forward_render() {
     dir_shadow_fbo_.bind();
     dir_shadow_fbo_.clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
     draw_dir_light_shadow();
+    dir_shadow_fbo_.unbind();
 
     // 绘制点光源阴影
     draw_point_light_shadow();
@@ -73,19 +74,18 @@ void Rasterizer::forward_render() {
     pbr_shader_.set_vec3("dirLight.color", Scene::dir_light.color);
 
     pbr_shader_.set_int("pointLightCount", num_lights_);
-    pbr_shader_.set_float("farPlane", Scene::point_light[0].z_far);
+    pbr_shader_.set_float("farPlane",
+                          Scene::point_light[0].z_far);  // TODO 修正
 
-    const int num_ssbo = 4;
-
-    pbr_shader_.set_int("albedoMap", num_ssbo + 0);
-    pbr_shader_.set_int("normalMap", num_ssbo + 1);
-    pbr_shader_.set_int("metallicMap", num_ssbo + 2);
-    pbr_shader_.set_int("roughnessMap", num_ssbo + 3);
-    pbr_shader_.set_int("aoMap", num_ssbo + 4);
-    pbr_shader_.set_int("irradianceMap", num_ssbo + 5);
-    pbr_shader_.set_int("prefilterMap", num_ssbo + 6);
-    pbr_shader_.set_int("brdfLUT", num_ssbo + 7);
-    pbr_shader_.set_int("dirShadowMap", num_ssbo + 8);
+    pbr_shader_.set_int("albedoMap", 0);
+    pbr_shader_.set_int("normalMap", 1);
+    pbr_shader_.set_int("metallicMap", 2);
+    pbr_shader_.set_int("roughnessMap", 3);
+    pbr_shader_.set_int("aoMap", 4);
+    pbr_shader_.set_int("irradianceMap", 5);
+    pbr_shader_.set_int("prefilterMap", 6);
+    pbr_shader_.set_int("brdfLUT", 7);
+    pbr_shader_.set_int("dirShadowMap", 8);
 
     glActiveTexture(GL_TEXTURE0 + 8);
     glBindTexture(GL_TEXTURE_2D, Scene::dir_light.depth_map_tex_id);
@@ -99,9 +99,8 @@ void Rasterizer::forward_render() {
         pbr_shader_.set_vec3(("pointLightColor[" + num + "]").c_str(),
                              light.color);
 
-        pbr_shader_.set_int(("pointShadowMaps[" + num + "]").c_str(),
-                            num_ssbo + 9 + i);
-        glActiveTexture(GL_TEXTURE0 + num_ssbo + 9 + i);
+        pbr_shader_.set_int(("pointShadowMaps[" + num + "]").c_str(), 9 + i);
+        glActiveTexture(GL_TEXTURE0 + 9 + i);
         glBindTexture(GL_TEXTURE_CUBE_MAP, light.depth_map_tex_id);
     }
 
@@ -113,14 +112,14 @@ void Rasterizer::forward_render() {
         pbr_shader_.set_mat3("normalMatrix",
                              glm::transpose(glm::inverse(glm::mat3(model))));
 
-        prop.albedo_map->bind(num_ssbo + 0);
-        prop.normal_map->bind(num_ssbo + 1);
-        prop.metallic_map->bind(num_ssbo + 2);
-        prop.roughness_map->bind(num_ssbo + 3);
-        prop.ao_map->bind(num_ssbo + 4);
-        prop.irradiance_map->bind(num_ssbo + 5);
-        prop.prefilter_map->bind(num_ssbo + 6);
-        prop.lut_map->bind(num_ssbo + 7);
+        prop.albedo_map->bind(0);
+        prop.normal_map->bind(1);
+        prop.metallic_map->bind(2);
+        prop.roughness_map->bind(3);
+        prop.ao_map->bind(4);
+        prop.irradiance_map->bind(5);
+        prop.prefilter_map->bind(6);
+        prop.lut_map->bind(7);
 
         entity.render(false);
     }
@@ -356,6 +355,7 @@ void Rasterizer::draw_point_light_shadow() {
             point_light_shader_.set_mat4("M", M);
             model.render(false);
         }
+        point_shadow_fbos_[i].unbind();
     }
 }
 
