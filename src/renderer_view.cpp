@@ -113,14 +113,14 @@ void RendererView::init(int width, int height) {
     //  std::make_shared<Model>("assets/Cerberus/Cerberus_LP.FBX");
 
     // 设置灯光
-    Scene::point_light.push_back(
-        {glm::vec3(300.0f, 0.0f, 0.0f), glm::vec3(0, 0, 5.0f)});
-    Scene::point_light.push_back(
-        {glm::vec3(0.0f, 300.0f, 0.0f), glm::vec3(-5.0f, 0, 3.0f)});
-    Scene::point_light.push_back(
-        {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(5.0f, 0, 1.0f)});
-    Scene::point_light.push_back(
-        {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(0, 0, -5.0f)});
+    // Scene::point_light.push_back(
+    //     {glm::vec3(300.0f, 0.0f, 0.0f), glm::vec3(0, 0, 5.0f)});
+    // Scene::point_light.push_back(
+    //     {glm::vec3(0.0f, 300.0f, 0.0f), glm::vec3(-5.0f, 0, 3.0f)});
+    // Scene::point_light.push_back(
+    //     {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(5.0f, 0, 1.0f)});
+    // Scene::point_light.push_back(
+    //     {glm::vec3(0.0f, 0.0f, 300.0f), glm::vec3(0, 0, -5.0f)});
 
     // Scene::dir_light.direction = glm::vec3(0.0f, 5.0f, 1.333f);
     // Scene::dir_light.distance = 10;

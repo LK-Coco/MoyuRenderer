@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 out vec4 FragColor;
 in vec2 TexCoords;
@@ -25,11 +25,26 @@ struct DirLight{
     vec3 color;
 };
 uniform DirLight dirLight;
-uniform vec3 lightPositions[4];
-uniform vec3 lightColors[4];
+
+struct PointLight{
+    vec3 position;
+    vec3 color;
+    bool enabled;
+    float intensity;
+    float range;
+};
+layout (std430, binding = 3) buffer lightSSBO{
+    PointLight pointLight[];
+};
+uniform uint pointLightCount;
+uniform vec3 pointLightPosition[4];
+uniform vec3 pointLightColor[4];
 
 // shadow
 uniform sampler2D dirShadowMap;
+uniform float farPlane;
+#define MAX_POINT_COUNT 4
+uniform samplerCube pointShadowMaps[MAX_POINT_COUNT];
 
 uniform vec3 camPos;
 
@@ -106,7 +121,7 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 
 
 // 计算阴影
-float ShadowCalculation(vec4 fragPosLightSpace)
+float ShadowCalculationDir(vec4 fragPosLightSpace)
 {
     // 执行透视除法
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -139,22 +154,38 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     return shadow;
 }
 
-// float ShadowCalculation(vec4 fragPosLightSpace)
-// {
-//     // 执行透视除法
-//     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-//     // 变换到[0,1]的范围
-//     projCoords = projCoords * 0.5 + 0.5;
-//     // 取得最近点的深度(使用[0,1]范围下的fragPosLight当坐标)
-//     float closestDepth = texture(dirShadowMap, projCoords.xy).r; 
-//     // 取得当前片段在光源视角下的深度
-//     float currentDepth = projCoords.z;
-//     // 检查当前片段是否在阴影中
-//     float bias = max(0.05 * (1.0 - dot(Normal, dirLight.direction)), 0.005);
-//     float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 
-//     return shadow;
-// }
+// array of offset direction for sampling
+vec3 gridSamplingDisk[20] = vec3[]
+(
+   vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
+   vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+   vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+   vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+   vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+);
+
+float ShadowCalculationPoint(samplerCube pointShadowMap,vec3 fragToLight,float viewDistance)
+{
+    float currentDepth = length(fragToLight);
+
+    float shadow = 0.0;
+    float bias = 0.15;
+    int samples = 20;
+
+    float diskRadius = (1.0 + (viewDistance / farPlane)) / 25.0;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(pointShadowMap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+        closestDepth *= farPlane;   // undo mapping [0;1]
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);       
+        
+    return shadow;
+}
+
 
 vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,float shadow, vec3 F0){
     vec3 L = normalize(dirLight.direction);
@@ -182,9 +213,42 @@ vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,f
 }
 
 
+vec3 CalcPointLight(uint index,vec3 V,vec3 N,float roughness,float metallic,vec3 albedo,vec3 F0,float viewDistance){
+    // light的直接光贡献
+    vec3 lightPosition = pointLightPosition[index];
+    vec3 L = normalize(lightPosition - WorldPos);
+    vec3 H = normalize(V + L);
+    float distance = length(lightPosition - WorldPos);
+    float attenuation = 1.0 / (distance * distance);
+    vec3 radianceIn = pointLightColor[index] * attenuation;
+    // scale light by NdotL
+    float NdotL = max(dot(N, L), 0.0);
+    float NdotV = max(dot(N, V), 0.0);
+    // 基于Cook-Torrance BRDF计算间接光
+    // Cook-Torrance BRDF
+    float NDF = DistributionGGX(N, H, roughness);   
+    float G   = GeometrySmith(N, V, L, roughness);      
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+       
+    vec3 numerator    = NDF * G * F; 
+    float denominator = 4.0 * NdotV * NdotL + 0.0001; // + 0.0001 to prevent divide by zero
+    vec3 specular = numerator / denominator;
+    
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;	  
+
+    vec3 radiance = (kD * albedo / PI + specular) * radianceIn * NdotL;    
+    vec3 fragToLight = WorldPos - lightPosition;
+    float shadow = ShadowCalculationPoint(pointShadowMaps[index],fragToLight,viewDistance);
+
+    radiance *= (1.0-shadow);
+
+    return vec3(radiance);
+}
 
 
-//vec3 CalcPointLight(){}
+
 
 // ----------------------------------------------------------------------------
 void main()
@@ -206,48 +270,16 @@ void main()
 
     // reflectance equation
     vec3 Lo = vec3(0.0);
-    for(int i = 0; i < 4; ++i) 
+
+    float viewDistance = length(camPos - WorldPos);
+    for(int i = 0; i < 1; ++i) 
     {
-        // light的直接光贡献
-        // calculate per-light radiance
-        vec3 L = normalize(lightPositions[i] - WorldPos);
-        vec3 H = normalize(V + L);
-        float distance = length(lightPositions[i] - WorldPos);
-        float attenuation = 1.0 / (distance * distance);
-        vec3 radiance = lightColors[i] * attenuation;
-
-        // 基于Cook-Torrance BRDF计算间接光
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughness);   
-        float G   = GeometrySmith(N, V, L, roughness);      
-        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
-           
-        vec3 numerator    = NDF * G * F; 
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
-        vec3 specular = numerator / denominator;
-        
-        // kS is equal to Fresnel
-        vec3 kS = F;
-        // for energy conservation, the diffuse and specular light can't
-        // be above 1.0 (unless the surface emits light); to preserve this
-        // relationship the diffuse component (kD) should equal 1.0 - kS.
-        vec3 kD = vec3(1.0) - kS;
-        // multiply kD by the inverse metalness such that only non-metals 
-        // have diffuse lighting, or a linear blend if partly metal (pure metals
-        // have no diffuse light).
-        kD *= 1.0 - metallic;	  
-
-        // scale light by NdotL
-        float NdotL = max(dot(N, L), 0.0);        
-
-        // add to outgoing radiance Lo
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        Lo += CalcPointLight(i,V,N,roughness,metallic,albedo,F0,viewDistance); 
     }   
     
-    float shadow = ShadowCalculation(FragPosLightSpace);
-    vec3 dirLo= CalcDirLight(V,N,albedo,metallic,roughness,shadow,F0);
-    Lo = vec3(0.0);
-    Lo += dirLo;
+    //float shadow = ShadowCalculationDir(FragPosLightSpace);
+    //vec3 dirLo= CalcDirLight(V,N,albedo,metallic,roughness,shadow,F0);
+    //Lo += dirLo;
 
     vec3 ambient = vec3(0.025) * albedo;
     if(IBL){
@@ -278,6 +310,6 @@ void main()
     // gamma correct
     color = pow(color, vec3(1.0/2.2)); 
 
-    FragColor = vec4(vec3(color) , 1.0);
+    FragColor = vec4(vec3(Lo) , 1.0);
 }
 

@@ -29,31 +29,34 @@ struct PointLight : public BaseLight {
     }
 
     glm::vec3 position = glm::vec3(0.0f);
-    glm::mat4 look_at_per_face[6];
+    glm::mat4 shadow_transforms[6];
 
     void default_init() {
-        z_near = 0.1f;
-        z_far = 100.0f;
-
         shadow_projection_mat =
             glm::perspective(glm::radians(90.0f), 1.0f, z_near, z_far);
 
-        look_at_per_face[0] =
+        shadow_transforms[0] =
+            shadow_projection_mat *
             glm::lookAt(position, position + glm::vec3(1.0, 0.0, 0.0),
                         glm::vec3(0.0, -1.0, 0.0));
-        look_at_per_face[1] =
+        shadow_transforms[1] =
+            shadow_projection_mat *
             glm::lookAt(position, position + glm::vec3(-1.0, 0.0, 0.0),
                         glm::vec3(0.0, -1.0, 0.0));
-        look_at_per_face[2] =
+        shadow_transforms[2] =
+            shadow_projection_mat *
             glm::lookAt(position, position + glm::vec3(0.0, 1.0, 0.0),
                         glm::vec3(0.0, 0.0, 1.0));
-        look_at_per_face[3] =
+        shadow_transforms[3] =
+            shadow_projection_mat *
             glm::lookAt(position, position + glm::vec3(1.0, -1.0, 0.0),
                         glm::vec3(0.0, 0.0, -1.0));
-        look_at_per_face[4] =
+        shadow_transforms[4] =
+            shadow_projection_mat *
             glm::lookAt(position, position + glm::vec3(0.0, 0.0, 1.0),
                         glm::vec3(0.0, -1.0, 0.0));
-        look_at_per_face[5] =
+        shadow_transforms[5] =
+            shadow_projection_mat *
             glm::lookAt(position, position + glm::vec3(0.0, 0.0, -1.0),
                         glm::vec3(0.0, -1.0, 0.0));
     }
@@ -70,8 +73,8 @@ struct DirLight : public BaseLight {
 };
 
 struct GPULight {
-    glm::vec4 position;
-    glm::vec4 color;
+    glm::vec3 position;
+    glm::vec3 color;
     unsigned int enabled;
     float intensity;
     float range;

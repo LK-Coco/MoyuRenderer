@@ -90,6 +90,26 @@ void Scene::load_json(const char* file_path) {
     dir_light.z_far = (float)json_dir_light["z_far"];
     dir_light.ortho_box_size = (float)json_dir_light["ortho_size"];
     dir_light.shadow_res = (unsigned int)json_dir_light["shadow_res"];
+
+    // 点光源
+    nlohmann::json json_point_lights = scene_json["point_lights"];
+    uint32_t point_lights_count = json_point_lights.size();
+    for (uint32_t i = 0; i < point_lights_count; ++i) {
+        nlohmann::json json_point_light = json_point_lights[i];
+        nlohmann::json json_light_pos = json_point_light["position"];
+        nlohmann::json json_color = json_point_light["color"];
+        glm::vec3 pos((float)json_light_pos[0], (float)json_light_pos[1],
+                      (float)json_light_pos[2]);
+        glm::vec3 color((float)json_color[0], (float)json_color[1],
+                        (float)json_color[2]);
+        PointLight light(color, pos);
+        light.strength = json_point_light["strength"];
+        light.z_near = json_point_light["z_near"];
+        light.z_far = json_point_light["z_far"];
+        light.shadow_res = json_point_light["shadow_res"];
+
+        point_light.push_back(light);
+    }
 }
 
 }  // namespace MR
