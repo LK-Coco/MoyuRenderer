@@ -36,14 +36,17 @@ struct PointLight{
 // layout (std430, binding = 3) buffer lightSSBO{
 //     PointLight pointLight[];
 // };
+
+#define MAX_POINT_COUNT 4
+
 uniform uint pointLightCount;
-uniform vec3 pointLightPosition[4];
-uniform vec3 pointLightColor[4];
+uniform vec3 pointLightPosition[MAX_POINT_COUNT];
+uniform vec3 pointLightColor[MAX_POINT_COUNT];
 
 // shadow
 uniform sampler2D dirShadowMap;
 uniform float farPlane;
-#define MAX_POINT_COUNT 4
+
 uniform samplerCube pointShadowMaps[MAX_POINT_COUNT];
 
 uniform vec3 camPos;
@@ -174,18 +177,18 @@ float ShadowCalculationPoint(uint index,vec3 fragToLight,float viewDistance)
     float inv_samples = 1.0 / samples;
     float diskRadius = (1.0 + (viewDistance / farPlane)) / 25.0;
     float currentDepth = length(fragToLight) - bias;
-    // for(int i = 0; i < samples; ++i)
-    // {
-    //     float closestDepth = texture(pointShadowMaps[index], fragToLight + gridSamplingDisk[i] , diskRadius).r;
-    //     closestDepth *= farPlane;   // undo mapping [0;1]
-    //     if(currentDepth > closestDepth)
-    //         shadow += inv_samples;
-    // }     
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(pointShadowMaps[index], fragToLight + gridSamplingDisk[i] , diskRadius).r;
+        closestDepth *= farPlane;   // undo mapping [0;1]
+        if(currentDepth > closestDepth)
+            shadow += inv_samples;
+    }     
      
-    // return shadow;
-    float closestDepth = texture(pointShadowMaps[index], fragToLight).r;
-    closestDepth *= farPlane;
-    return currentDepth > closestDepth ? 1.0:0.0;
+    return shadow;
+    // float closestDepth = texture(pointShadowMaps[index], fragToLight).r;
+    // closestDepth *= farPlane;
+    // return currentDepth > closestDepth ? 1.0:0.0;
 }
 
 
@@ -276,14 +279,14 @@ void main()
     vec3 Lo = vec3(0.0);
 
     float viewDistance = length(camPos - WorldPos);
-    for(int i = 0; i < 1; ++i) 
+    for(int i = 0; i < MAX_POINT_COUNT; ++i) 
     {
         Lo += CalcPointLight(i,V,N,roughness,metallic,albedo,F0,viewDistance); 
     }   
     
     float shadow = ShadowCalculationDir(FragPosLightSpace);
     vec3 dirLo= CalcDirLight(V,N,albedo,metallic,roughness,shadow,F0);
-    //Lo += dirLo;
+    Lo += dirLo;
 
     vec3 ambient = vec3(0.025) * albedo;
     if(IBL){
@@ -307,13 +310,13 @@ void main()
     }
     ambient *= ao;
     
-    vec3 color = ambient  + Lo;
+    vec3 color = ambient + Lo;
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
     // gamma correct
     color = pow(color, vec3(1.0/2.2)); 
 
-    FragColor = vec4(vec3(Lo) , 1.0);
+    FragColor = vec4(vec3(color) , 1.0);
 }
 
