@@ -47,7 +47,7 @@ private:
     FrameBuffer fbo_;
     DirShadowBufferFBO dir_shadow_fbo_;
     MultiSampledFBO multi_sample_fbo_;
-    PointShadowBufferFBO* point_shadow_fbos_;
+    std::vector<PointShadowBufferFBO> point_shadow_fbos_;
 
     Shader skybox_shader_;
     Shader dir_light_shader_;

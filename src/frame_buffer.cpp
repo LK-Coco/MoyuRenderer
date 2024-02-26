@@ -91,11 +91,7 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
 FrameBuffer::FrameBuffer(int w, int h) {
     width = w;
     height = h;
-
-    init();
 }
-
-FrameBuffer::~FrameBuffer() { deinit(); }
 
 void FrameBuffer::init() {
     glGenFramebuffers(1, &fb_id);
@@ -106,10 +102,10 @@ void FrameBuffer::init() {
     attach_depth_id =
         attach(GLAttachmentType::SING_2D_HDR_DEP, 0, width, height);
 
-    check_completeness();
+    check_completeness("FrameBuffer");
 }
 
-void FrameBuffer::deinit() { glDeleteFramebuffers(1, &fb_id); }
+void FrameBuffer::dispose() { glDeleteFramebuffers(1, &fb_id); }
 
 void FrameBuffer::clear(GLbitfield clear_target, glm::vec3 clear_color) {
     glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
@@ -134,15 +130,16 @@ void FrameBuffer::blit_to(const FrameBuffer& fbo, GLbitfield mask) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_id);
 }
 
-bool FrameBuffer::check_completeness() {
+bool FrameBuffer::check_completeness(const char* name) {
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
-                  << std::endl;
+        GLuint code = glGetError();
+        std::cout << "ERROR::" << name << "  " << code
+                  << ":: Framebuffer is not complete!" << std::endl;
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         return false;
     }
-
+    std::cout << name << "::init ok" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return true;
@@ -160,10 +157,10 @@ void CaptureFBO::init() {
                               GL_RENDERBUFFER, rbo_id);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-    check_completeness();
+    check_completeness("CaptureFBO");
 }
 
-void CaptureFBO::deinit() {
+void CaptureFBO::dispose() {
     glDeleteFramebuffers(1, &fb_id);
     glDeleteRenderbuffers(1, &rbo_id);
 }
@@ -184,7 +181,7 @@ void MultiSampledFBO::init() {
     attach_depth_id =
         attach(GLAttachmentType::MULT_2D_HDR_DEP, 0, width, height);
 
-    check_completeness();
+    check_completeness("MultiSampledFBO");
 }
 
 void ResolveBufferFBO::init() {
@@ -198,10 +195,8 @@ void ResolveBufferFBO::init() {
     blur_high_end =
         attach(GLAttachmentType::SING_2D_HDR_COL_CLAMP, 1, width, height);
 
-    check_completeness();
+    check_completeness("ResolveBufferFBO");
 }
-
-void ResolveBufferFBO::deinit() { glDeleteFramebuffers(1, &fb_id); }
 
 void QuadHDRBufferFBO::init() {
     glGenFramebuffers(1, &fb_id);
@@ -210,10 +205,8 @@ void QuadHDRBufferFBO::init() {
     attach_color_id =
         attach(GLAttachmentType::SING_2D_HDR_COL_CLAMP, 0, width, height);
 
-    check_completeness();
+    check_completeness("QuadHDRBufferFBO");
 }
-
-void QuadHDRBufferFBO::deinit() { glDeleteFramebuffers(1, &fb_id); }
 
 void DirShadowBufferFBO::init() {
     glGenFramebuffers(1, &fb_id);
@@ -225,29 +218,39 @@ void DirShadowBufferFBO::init() {
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
 
-    check_completeness();
+    check_completeness("DirShadowBufferFBO");
 }
-
-void DirShadowBufferFBO::deinit() { glDeleteFramebuffers(1, &fb_id); }
 
 void PointShadowBufferFBO::init() {
     glGenFramebuffers(1, &fb_id);
+
+    GLuint depth_cubemap;
+    glGenTextures(1, &depth_cubemap);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depth_cubemap);
+    for (GLuint i = 0; i < 6; ++i) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+                     width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE,
+                    GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
     glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 
-    tex_drawing.generate_texture_id();
-    tex_drawing.bind();
-    tex_drawing.generate_with_type(width, height, CubeMapType::SHADOW_MAP);
-    attach_depth_id = tex_drawing.id;
-
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, attach_depth_id,
-                         0);
-
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_cubemap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
 
-    check_completeness();
-}
+    attach_depth_id = depth_cubemap;
 
-void PointShadowBufferFBO::deinit() { glDeleteFramebuffers(1, &fb_id); }
+    check_completeness("PointShadowBufferFBO");
+}
 
 }  // namespace MR

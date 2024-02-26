@@ -133,7 +133,7 @@ void RendererView::init(int width, int height) {
 
     // 预处理hdr环境贴图
     auto fbo = CaptureFBO(512, 512);
-
+    fbo.init();
     // 加载hdr环境贴图
     auto hdr_tex = Resources::load_hdr_texture("hdr_env_map",
                                                "assets/hdr/newport_loft.hdr");

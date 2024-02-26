@@ -19,10 +19,10 @@ enum class GLAttachmentType {
 struct FrameBuffer {
     FrameBuffer() {}
     FrameBuffer(int width, int height);
-    ~FrameBuffer();
 
     virtual void init();
-    virtual void deinit();
+
+    virtual void dispose();
 
     void bind();
     void unbind();
@@ -31,7 +31,7 @@ struct FrameBuffer {
 
     void clear(GLbitfield clear_target, glm::vec3 clear_color);
 
-    bool check_completeness();
+    bool check_completeness(const char* name);
 
     int width, height;
 
@@ -44,7 +44,8 @@ struct CaptureFBO : public FrameBuffer {
     CaptureFBO(int w, int h) : FrameBuffer(w, h) {}
 
     void init() override;
-    void deinit() override;
+
+    void dispose() override;
 
     void resize(int width, int height);
 
@@ -59,14 +60,12 @@ struct MultiSampledFBO : public FrameBuffer {
 
 struct ResolveBufferFBO : public FrameBuffer {
     void init() override;
-    void deinit() override;
 
     GLuint blur_high_end;
 };
 
 struct QuadHDRBufferFBO : public FrameBuffer {
     void init() override;
-    void deinit() override;
 };
 
 struct DirShadowBufferFBO : public FrameBuffer {
@@ -74,14 +73,16 @@ struct DirShadowBufferFBO : public FrameBuffer {
     DirShadowBufferFBO(int w, int h) : FrameBuffer(w, h) {}
 
     void init() override;
-    void deinit() override;
 };
 
 struct PointShadowBufferFBO : public FrameBuffer {
-    void init() override;
-    void deinit() override;
+    PointShadowBufferFBO() : FrameBuffer(2048, 2048) {}
+    PointShadowBufferFBO(int w, int h) : FrameBuffer(w, h) {}
 
-    TextureCube tex_drawing;
+    void init() override;
+
+    // private:
+    //     TextureCube tex_drawing_;
 };
 
 }  // namespace MR

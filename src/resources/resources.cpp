@@ -73,7 +73,7 @@ TextureCube* Resources::environment_map_to_cubemap(
     unsigned int id = SHASH(name);
 
     TextureCube cube_tex;
-    cube_tex.filter_min = GL_LINEAR_MIPMAP_LINEAR;
+    // cube_tex.filter_min = GL_LINEAR_MIPMAP_LINEAR;
     cube_tex.generate_texture_id();
     cube_tex.bind();
     cube_tex.generate_empty_face(512, 512, GL_RGB16F, GL_RGB, GL_FLOAT,
@@ -114,7 +114,7 @@ TextureCube* Resources::environment_map_to_cubemap(
         cube.render();  // renders a 1x1 cube
     }
 
-    cube_tex.gen_mipmap();
+    // cube_tex.gen_mipmap();
 
     fbo.unbind();
 

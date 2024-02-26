@@ -10,7 +10,16 @@ Rasterizer::Rasterizer()
     : fbo_(FrameBuffer(Scene::width, Scene::height)),
       multi_sample_fbo_(Scene::width, Scene::height) {
     num_lights_ = Scene::point_light.size();
-    point_shadow_fbos_ = new PointShadowBufferFBO[num_lights_];
+    for (int i = 0; i < num_lights_; ++i) {
+        auto res = Scene::point_light[i].shadow_res;
+        point_shadow_fbos_.push_back(PointShadowBufferFBO(res, res));
+    }
+    for (int i = 0; i < point_shadow_fbos_.size(); ++i) {
+        point_shadow_fbos_[i].init();
+    }
+
+    fbo_.init();
+    dir_shadow_fbo_.init();
 
     load_shaders();
 
@@ -130,6 +139,7 @@ void Rasterizer::forward_render() {
     skybox_shader_.use();
     skybox_shader_.set_mat4("projection", Scene::camera->get_projection());
     skybox_shader_.set_mat4("view", Scene::camera->get_view_mat());
+    skybox_shader_.set_int("environmentMap", 0);
 
     Scene::skybox->draw();
 
