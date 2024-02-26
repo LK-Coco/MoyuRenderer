@@ -167,26 +167,30 @@ vec3 gridSamplingDisk[20] = vec3[]
 
 float ShadowCalculationPoint(uint index,vec3 fragToLight,float viewDistance)
 {
-    float currentDepth = length(fragToLight);
 
     float shadow = 0.0;
     float bias = 0.15;
-    int samples = 7;  // TODO 采样有问题
+    int samples = 8;  // TODO 采样有问题
     float inv_samples = 1.0 / samples;
     float diskRadius = (1.0 + (viewDistance / farPlane)) / 25.0;
-    for(int i = 0; i < samples; ++i)
-    {
-        float closestDepth = texture(pointShadowMaps[index], fragToLight + gridSamplingDisk[i] * diskRadius).r;
-        closestDepth *= farPlane;   // undo mapping [0;1]
-        if(currentDepth - bias > closestDepth)
-            shadow += inv_samples;
-    }     
+    float currentDepth = length(fragToLight) - bias;
+    // for(int i = 0; i < samples; ++i)
+    // {
+    //     float closestDepth = texture(pointShadowMaps[index], fragToLight + gridSamplingDisk[i] , diskRadius).r;
+    //     closestDepth *= farPlane;   // undo mapping [0;1]
+    //     if(currentDepth > closestDepth)
+    //         shadow += inv_samples;
+    // }     
      
-    return shadow;
+    // return shadow;
+    float closestDepth = texture(pointShadowMaps[index], fragToLight).r;
+    closestDepth *= farPlane;
+    return currentDepth > closestDepth ? 1.0:0.0;
 }
 
 
-vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,float shadow, vec3 F0){
+vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,float shadow, vec3 F0)
+{
     vec3 L = normalize(dirLight.direction);
     vec3 H = normalize(L + V);
     float NdotV = max(dot(N,V),0.0);
@@ -212,7 +216,8 @@ vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,f
 }
 
 
-vec3 CalcPointLight(uint index,vec3 V,vec3 N,float roughness,float metallic,vec3 albedo,vec3 F0,float viewDistance){
+vec3 CalcPointLight(uint index,vec3 V,vec3 N,float roughness,float metallic,vec3 albedo,vec3 F0,float viewDistance)
+{
     // light的直接光贡献
     vec3 lightPosition = pointLightPosition[index];
     vec3 L = normalize(lightPosition - WorldPos);
@@ -239,9 +244,9 @@ vec3 CalcPointLight(uint index,vec3 V,vec3 N,float roughness,float metallic,vec3
 
     vec3 radiance = (kD * albedo / PI + specular) * radianceIn * NdotL;    
     vec3 fragToLight = WorldPos - lightPosition;
-    //float shadow = ShadowCalculationPoint(index,fragToLight,viewDistance);
+    float shadow = ShadowCalculationPoint(index,fragToLight,viewDistance);
 
-    //radiance *= (1.0 - shadow);
+    radiance *= (1.0 - shadow);
 
     return vec3(radiance);
 }
@@ -271,14 +276,14 @@ void main()
     vec3 Lo = vec3(0.0);
 
     float viewDistance = length(camPos - WorldPos);
-    for(int i = 0; i < 4; ++i) 
+    for(int i = 0; i < 1; ++i) 
     {
         Lo += CalcPointLight(i,V,N,roughness,metallic,albedo,F0,viewDistance); 
     }   
     
     float shadow = ShadowCalculationDir(FragPosLightSpace);
     vec3 dirLo= CalcDirLight(V,N,albedo,metallic,roughness,shadow,F0);
-    Lo += dirLo;
+    //Lo += dirLo;
 
     vec3 ambient = vec3(0.025) * albedo;
     if(IBL){
@@ -309,6 +314,6 @@ void main()
     // gamma correct
     color = pow(color, vec3(1.0/2.2)); 
 
-    FragColor = vec4(vec3(color) , 1.0);
+    FragColor = vec4(vec3(Lo) , 1.0);
 }
 

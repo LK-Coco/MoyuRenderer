@@ -43,6 +43,20 @@ void Scene::load_json(const char* file_path) {
     std::ifstream file(file_path);
     file >> scene_json;
 
+    width = (float)scene_json["scene_width"];
+    height = (float)scene_json["scene_height"];
+
+    nlohmann::json json_camera = scene_json["camera"];
+    nlohmann::json json_pos = json_camera["position"];
+    nlohmann::json json_target = json_camera["target"];
+
+    camera = std::make_shared<Camera>(
+        glm::vec3((float)json_pos[0], (float)json_pos[1], (float)json_pos[2]),
+        glm::vec3((float)json_target[0], (float)json_target[1],
+                  (float)json_target[2]),
+        (float)json_camera["fov"], (float)width / (float)height,
+        (float)json_camera["near_p"], (float)json_camera["far_p"]);
+
     // Models
     nlohmann::json json_models = scene_json["models"];
     unsigned int models_size = json_models.size();
