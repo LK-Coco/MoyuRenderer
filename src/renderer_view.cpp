@@ -165,11 +165,6 @@ void RendererView::run() {
 
         process_input(window_, target_frame_time_);
 
-        glm::mat4 projection = glm::perspective(
-            glm::radians(Scene::camera->get_zoom()),
-            (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
-        glm::mat4 view = Scene::camera->get_view_mat();
-
         renderer_->render();
 
         // 开始ImGui框架新的帧

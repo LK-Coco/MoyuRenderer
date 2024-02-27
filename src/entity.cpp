@@ -2,12 +2,6 @@
 
 namespace MR {
 
-void Entity::render(bool use) {
-    // if (use) {
-    //     auto raw = obj.get();
-    //     mat->fill_unifrom(*raw);
-    // }
-    obj->render();
-}
+void Entity::render() { obj->render(); }
 
 }  // namespace MR

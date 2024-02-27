@@ -130,7 +130,7 @@ void Rasterizer::forward_render() {
         prop.prefilter_map->bind(6);
         prop.lut_map->bind(7);
 
-        entity.render(false);
+        entity.render();
     }
 
     // 关闭面剔除
@@ -334,7 +334,7 @@ void Rasterizer::draw_dir_light_shadow() {
             Scene::dir_light.light_space_mat * model.obj->get_model_matrix();
         dir_light_shader_.use();
         dir_light_shader_.set_mat4("lightSpaceMatrix", model_ls);
-        model.render(false);
+        model.render();
     }
 }
 
@@ -363,7 +363,7 @@ void Rasterizer::draw_point_light_shadow() {
         for (auto& model : Scene::entities) {
             M = model.obj->get_model_matrix();
             point_light_shader_.set_mat4("M", M);
-            model.render(false);
+            model.render();
         }
         point_shadow_fbos_[i].unbind();
     }
@@ -387,7 +387,7 @@ void Rasterizer::draw_depth_pass() {
         depth_shader_.set_int("albedo", 0);
         model.material_prop.albedo_map->bind(0);
 
-        model.render(false);
+        model.render();
     }
 }
 
@@ -479,7 +479,7 @@ void Rasterizer::draw_objects() {
         pbr_cluster_shader_.set_int("roughMap", 5);
         prop.roughness_map->bind(5);
 
-        model.render(false);
+        model.render();
     }
 }
 
