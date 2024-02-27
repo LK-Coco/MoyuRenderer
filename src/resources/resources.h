@@ -6,6 +6,7 @@
 #include "shading/texture.h"
 #include "shading/texture_cube.h"
 #include "frame_buffer.h"
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace MR {
 
@@ -74,6 +75,9 @@ private:
 
     static std::map<unsigned int, Texture> textures_;
     static std::map<unsigned int, TextureCube> textures_cube_;
+
+    static glm::mat4 capture_projection;
+    static glm::mat4 capture_views[];
 };
 
 }  // namespace MR

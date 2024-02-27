@@ -43,9 +43,52 @@ void Scene::load_json(const char* file_path) {
     std::ifstream file(file_path);
     file >> scene_json;
 
+    //  width height
     width = (float)scene_json["scene_width"];
     height = (float)scene_json["scene_height"];
 
+    // skybox
+    // 预处理hdr环境贴图
+    uint32_t skybox_res = (uint32_t)scene_json["sky_box"]["resolution"];
+    auto skybox_map = scene_json["sky_box"]["map"];
+
+    auto fbo = CaptureFBO(skybox_res, skybox_res);
+    fbo.init();
+    // 加载hdr环境贴图
+    auto hdr_tex = Resources::load_hdr_texture("hdr_env_map", skybox_map);
+    // 将hdr环境贴图转换为环境立方体贴图
+    auto env_map_to_cubemap_shader = std::make_shared<Shader>(
+        "assets/shaders/pbr/environment_map_to_cubemap.vs",
+        "assets/shaders/pbr/environment_map_to_cubemap.fs");
+    auto hdr_cubemap = Resources::environment_map_to_cubemap(
+        "hdr_cubemap", hdr_tex, env_map_to_cubemap_shader, fbo);
+
+    // 从环境立方体贴图计算出辐照度图
+    auto env_cubemap_to_irradiance_map_shader = std::make_shared<Shader>(
+        "assets/shaders/pbr/env_cubemap_to_irradiance_map.vs",
+        "assets/shaders/pbr/env_cubemap_to_irradiance_map.fs");
+    auto irradiance_map = Resources::env_cubemap_to_irradiance_map(
+        "irradiance_map", hdr_cubemap, env_cubemap_to_irradiance_map_shader,
+        fbo);
+
+    // 从环境立方体贴图计算出预滤波hdr环境贴图
+    auto env_cubemap_to_prefilter_map_shader = std::make_shared<Shader>(
+        "assets/shaders/pbr/env_cubemap_to_prefilter_map.vs",
+        "assets/shaders/pbr/env_cubemap_to_prefilter_map.fs");
+    auto prefilter_map = Resources::env_cubemap_to_prefilter_map(
+        "prefilter_map", hdr_cubemap, env_cubemap_to_prefilter_map_shader, fbo);
+
+    // 计算出BRDF的LUT图
+    auto brdf_lut_shader = std::make_shared<Shader>(
+        "assets/shaders/pbr/brdf_lut.vs", "assets/shaders/pbr/brdf_lut.fs");
+    auto brdf_lut =
+        Resources::clac_brdf_lut("brdf_lut_map", brdf_lut_shader, fbo);
+
+    // 设置天空盒
+    skybox = std::make_shared<Skybox>();
+    skybox->set_hdr_cube_map(hdr_cubemap);
+
+    // camera
     nlohmann::json json_camera = scene_json["camera"];
     nlohmann::json json_pos = json_camera["position"];
     nlohmann::json json_target = json_camera["target"];

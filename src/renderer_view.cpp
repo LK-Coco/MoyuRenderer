@@ -131,44 +131,6 @@ void RendererView::init(int width, int height) {
     // Scene::dir_light.ortho_box_size = 10;
     // Scene::dir_light.shadow_res = 2048;
 
-    // 预处理hdr环境贴图
-    auto fbo = CaptureFBO(512, 512);
-    fbo.init();
-    // 加载hdr环境贴图
-    auto hdr_tex = Resources::load_hdr_texture("hdr_env_map",
-                                               "assets/hdr/newport_loft.hdr");
-    // 将hdr环境贴图转换为环境立方体贴图
-    env_map_to_cubemap_shader_ = std::make_shared<Shader>(
-        "assets/shaders/pbr/environment_map_to_cubemap.vs",
-        "assets/shaders/pbr/environment_map_to_cubemap.fs");
-    auto hdr_cubemap = Resources::environment_map_to_cubemap(
-        "hdr_cubemap", hdr_tex, env_map_to_cubemap_shader_, fbo);
-
-    // 从环境立方体贴图计算出辐照度图
-    auto env_cubemap_to_irradiance_map_shader_ = std::make_shared<Shader>(
-        "assets/shaders/pbr/env_cubemap_to_irradiance_map.vs",
-        "assets/shaders/pbr/env_cubemap_to_irradiance_map.fs");
-    auto irradiance_map = Resources::env_cubemap_to_irradiance_map(
-        "irradiance_map", hdr_cubemap, env_cubemap_to_irradiance_map_shader_,
-        fbo);
-
-    // 从环境立方体贴图计算出预滤波hdr环境贴图
-    auto env_cubemap_to_prefilter_map_shader_ = std::make_shared<Shader>(
-        "assets/shaders/pbr/env_cubemap_to_prefilter_map.vs",
-        "assets/shaders/pbr/env_cubemap_to_prefilter_map.fs");
-    auto prefilter_map = Resources::env_cubemap_to_prefilter_map(
-        "prefilter_map", hdr_cubemap, env_cubemap_to_prefilter_map_shader_,
-        fbo);
-
-    // 计算出BRDF的LUT图
-    auto brdf_lut_shader_ = std::make_shared<Shader>(
-        "assets/shaders/pbr/brdf_lut.vs", "assets/shaders/pbr/brdf_lut.fs");
-    auto brdf_lut =
-        Resources::clac_brdf_lut("brdf_lut_map", brdf_lut_shader_, fbo);
-
-    // 设置天空盒
-    Scene::skybox = std::make_shared<Skybox>();
-    Scene::skybox->set_hdr_cube_map(hdr_cubemap);
     // 设置Material
     cur_material_ = 1;
     // switch_material();

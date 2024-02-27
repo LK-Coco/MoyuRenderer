@@ -3,7 +3,7 @@
     "scene_width": 1280,
     "scene_height": 720,
     "sky_box": {
-        "map": "",
+        "map": "assets/hdr/newport_loft.hdr",
         "resolution": 512
     },
     "camera": {
