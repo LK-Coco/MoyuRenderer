@@ -27,6 +27,7 @@ public:
         target = tar;
         front_ = glm::normalize(target - position);
         right_ = glm::normalize(glm::cross(front_, WORLD_UP));
+        up_ = glm::normalize(glm::cross(right_, front_));
         pitch = calc_pitch(front_);
         yaw = calc_yaw(front_, pitch);
 
