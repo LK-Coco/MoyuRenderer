@@ -13,7 +13,8 @@ enum class GLAttachmentType {
     MULT_2D_HDR_DEP,
     SING_2D_HDR_DEP,
     SING_2D_HDR_COL_CLAMP,
-    SING_2D_HDR_DEP_BORDER
+    SING_2D_HDR_DEP_BORDER,
+    SING_2D_HDR_COL_FLOAT,
 };
 
 struct FrameBuffer {
@@ -58,6 +59,13 @@ struct MultiSampledFBO : public FrameBuffer {
     void init() override;
 };
 
+struct MultiColorFBO : public FrameBuffer {
+    MultiColorFBO(int w, int h) : FrameBuffer(w, h) {}
+    void init() override;
+
+    GLuint attach_color_1_id;
+};
+
 struct ResolveBufferFBO : public FrameBuffer {
     void init() override;
 
@@ -65,6 +73,8 @@ struct ResolveBufferFBO : public FrameBuffer {
 };
 
 struct QuadHDRBufferFBO : public FrameBuffer {
+    QuadHDRBufferFBO(int w, int h) : FrameBuffer(w, h) {}
+
     void init() override;
 };
 

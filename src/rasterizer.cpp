@@ -7,8 +7,8 @@
 namespace MR {
 
 Rasterizer::Rasterizer()
-    : fbo_(FrameBuffer(Scene::width, Scene::height)),
-      multi_sample_fbo_(Scene::width, Scene::height) {
+    : multi_color_fbo_(Scene::width, Scene::height),
+      fbo_(Scene::width, Scene::height) {
     num_lights_ = Scene::point_light.size();
     for (int i = 0; i < num_lights_; ++i) {
         auto res = Scene::point_light[i].shadow_res;
@@ -18,8 +18,16 @@ Rasterizer::Rasterizer()
         point_shadow_fbos_[i].init();
     }
 
-    fbo_.init();
+    multi_color_fbo_.init();
     dir_shadow_fbo_.init();
+    for (int i = 0; i < 2; ++i) {
+        ping_pong_fbos_.push_back(
+            QuadHDRBufferFBO(Scene::width, Scene::height));
+    }
+    for (int i = 0; i < 2; ++i) {
+        ping_pong_fbos_[i].init();
+    }
+    fbo_.init();
 
     load_shaders();
 
@@ -62,14 +70,14 @@ void Rasterizer::forward_render() {
     // 绘制平行光阴影
     dir_shadow_fbo_.bind();
     dir_shadow_fbo_.clear(GL_DEPTH_BUFFER_BIT, glm::vec3(1.0f));
-    draw_dir_light_shadow();
+    draw_dir_light_shadow_forward();
     dir_shadow_fbo_.unbind();
 
     // 绘制点光源阴影
-    draw_point_light_shadow();
+    draw_point_light_shadow_forward();
 
     // 绘制物体
-    fbo_.bind();
+    multi_color_fbo_.bind();
     glViewport(0, 0, Scene::width, Scene::height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0f, 0.0f, 0.9f, 1.0f);
@@ -143,7 +151,9 @@ void Rasterizer::forward_render() {
 
     Scene::skybox->draw();
 
-    fbo_.unbind();
+    multi_color_fbo_.unbind();
+
+    post_process_forward();
 }
 
 void Rasterizer::deferred_render() {}
@@ -156,6 +166,11 @@ void Rasterizer::load_shaders() {
 
     dir_light_shader_ =
         Shader("assets/shaders/dir_light.vs", "assets/shaders/dir_light.fs");
+
+    blur_shader_ = Shader("assets/shaders/blur.vs", "assets/shaders/blur.fs");
+
+    bloom_shader_ = Shader("assets/shaders/bloom_final.vs",
+                           "assets/shaders/bloom_final.fs");
 
     // depth_shader_ =
     //     Shader("assets/shaders/depth_pass.vs",
@@ -310,10 +325,10 @@ void Rasterizer::pre_process() {
     glEnable(GL_DEPTH_TEST);
     glDepthMask(true);
 
-    draw_point_light_shadow();
+    draw_point_light_shadow_forward();
 }
 
-void Rasterizer::draw_dir_light_shadow() {
+void Rasterizer::draw_dir_light_shadow_forward() {
     float left = Scene::dir_light.ortho_box_size;
     float right = -left;
     float top = left;
@@ -338,7 +353,7 @@ void Rasterizer::draw_dir_light_shadow() {
     }
 }
 
-void Rasterizer::draw_point_light_shadow() {
+void Rasterizer::draw_point_light_shadow_forward() {
     // Populating depth cube maps for the point light shadows
     for (unsigned int i = 0; i < num_lights_; ++i) {
         point_shadow_fbos_[i].bind();
@@ -367,6 +382,43 @@ void Rasterizer::draw_point_light_shadow() {
         }
         point_shadow_fbos_[i].unbind();
     }
+}
+
+void Rasterizer::post_process_forward() {
+    // 模糊
+    bool horizontal = true, first_iteration = true;
+    unsigned int amount = 10;
+    blur_shader_.use();
+    for (unsigned int i = 0; i < amount; i++) {
+        glBindFramebuffer(GL_FRAMEBUFFER,
+                          ping_pong_fbos_[horizontal].attach_color_id);
+        blur_shader_.set_int("horizontal", horizontal);
+        glBindTexture(GL_TEXTURE_2D,
+                      first_iteration
+                          ? multi_color_fbo_.attach_color_1_id
+                          : ping_pong_fbos_[!horizontal]
+                                .attach_color_id);  // bind texture of other
+                                                    // framebuffer (or scene
+        screen_quad_.render();                      // if first iteration)
+
+        horizontal = !horizontal;
+        if (first_iteration) first_iteration = false;
+    }
+
+    // render bloom
+    fbo_.bind();
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    bloom_shader_.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, multi_color_fbo_.attach_color_id);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, ping_pong_fbos_[!horizontal].attach_color_id);
+    bloom_shader_.set_bool("bloom", true);
+    bloom_shader_.set_float("exposure", 1.0);
+    screen_quad_.render();
+
+    fbo_.unbind();
 }
 
 void Rasterizer::draw_depth_pass() {

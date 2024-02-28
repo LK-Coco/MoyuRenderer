@@ -3,6 +3,7 @@
 #include "skybox.h"
 #include "frame_buffer.h"
 #include "shading/material_property.h"
+#include "object/screen_quad.h"
 
 namespace MR {
 
@@ -32,9 +33,11 @@ private:
 
     void deferred_render();
 
-    void draw_point_light_shadow();
+    void draw_point_light_shadow_forward();
 
-    void draw_dir_light_shadow();
+    void draw_dir_light_shadow_forward();
+
+    void post_process_forward();
 
     void draw_depth_pass();
 
@@ -44,10 +47,11 @@ private:
 
     void post_process();
 
-    FrameBuffer fbo_;
+    MultiColorFBO multi_color_fbo_;
     DirShadowBufferFBO dir_shadow_fbo_;
-    MultiSampledFBO multi_sample_fbo_;
     std::vector<PointShadowBufferFBO> point_shadow_fbos_;
+    std::vector<QuadHDRBufferFBO> ping_pong_fbos_;
+    FrameBuffer fbo_;
 
     Shader skybox_shader_;
     Shader dir_light_shader_;
@@ -57,6 +61,10 @@ private:
     Shader pbr_shader_;
     Shader pbr_cluster_shader_;
     Shader build_aabb_grid_comp_shader_;
+    Shader blur_shader_;
+    Shader bloom_shader_;
+
+    ScreenQuad screen_quad_;
 
     const unsigned int GRID_SIZE_X = 16;
     const unsigned int GRID_SIZE_Y = 9;
