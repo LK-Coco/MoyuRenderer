@@ -63,8 +63,10 @@ private:
     Shader build_aabb_grid_comp_shader_;
     Shader blur_shader_;
     Shader bloom_shader_;
+    Shader light_mesh_shader_;
 
     ScreenQuad screen_quad_;
+    Cube light_cube_;
 
     const unsigned int GRID_SIZE_X = 16;
     const unsigned int GRID_SIZE_Y = 9;

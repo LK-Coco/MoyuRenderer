@@ -141,6 +141,16 @@ void Rasterizer::forward_render() {
         entity.render();
     }
 
+    light_mesh_shader_.use();
+    light_mesh_shader_.set_mat4("projection", Scene::camera->get_projection());
+    light_mesh_shader_.set_mat4("view", Scene::camera->get_view_mat());
+    auto model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(1.6f, 0, 0));
+    model = glm::scale(model, glm::vec3(0.25f));
+    light_mesh_shader_.set_mat4("model", model);
+    light_mesh_shader_.set_vec3("lightColor", glm::vec3(0, 0, 20));
+    light_cube_.render();
+
     // 关闭面剔除
     glDisable(GL_CULL_FACE);
 
@@ -171,6 +181,9 @@ void Rasterizer::load_shaders() {
 
     bloom_shader_ = Shader("assets/shaders/bloom_final.vs",
                            "assets/shaders/bloom_final.fs");
+
+    light_mesh_shader_ =
+        Shader("assets/shaders/light_mesh.vs", "assets/shaders/light_mesh.fs");
 
     // depth_shader_ =
     //     Shader("assets/shaders/depth_pass.vs",
@@ -389,10 +402,12 @@ void Rasterizer::post_process_forward() {
     bool horizontal = true, first_iteration = true;
     unsigned int amount = 10;
     blur_shader_.use();
+    blur_shader_.set_int("image", 0);
     for (unsigned int i = 0; i < amount; i++) {
-        glBindFramebuffer(GL_FRAMEBUFFER,
-                          ping_pong_fbos_[horizontal].attach_color_id);
-        blur_shader_.set_int("horizontal", horizontal);
+        glBindFramebuffer(GL_FRAMEBUFFER, ping_pong_fbos_[horizontal].fb_id);
+
+        glActiveTexture(GL_TEXTURE0);
+        blur_shader_.set_bool("horizontal", horizontal);
         glBindTexture(GL_TEXTURE_2D,
                       first_iteration
                           ? multi_color_fbo_.attach_color_1_id
@@ -410,6 +425,8 @@ void Rasterizer::post_process_forward() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     bloom_shader_.use();
+    bloom_shader_.set_int("scene", 0);
+    bloom_shader_.set_int("bloomBlur", 1);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, multi_color_fbo_.attach_color_id);
     glActiveTexture(GL_TEXTURE1);

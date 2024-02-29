@@ -208,6 +208,9 @@ void MultiColorFBO::init() {
     attach_depth_id =
         attach(GLAttachmentType::SING_2D_HDR_DEP, 0, width, height);
 
+    unsigned int attachments[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, attachments);
+
     check_completeness("MultiColorFBO");
 }
 

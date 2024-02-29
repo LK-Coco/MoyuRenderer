@@ -318,7 +318,7 @@ void main()
     // float exposure = 1.0; // 曝光度
     // color = vec3(1.0) - exp(-color * exposure);//color / (color + vec3(1.0));
     // gamma correct
-    color = pow(color, vec3(1.0/2.2)); 
+    //color = pow(color, vec3(1.0/2.2)); 
 
     FragColor = vec4(vec3(color) , 1.0);
 
