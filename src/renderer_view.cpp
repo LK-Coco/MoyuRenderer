@@ -5,9 +5,11 @@
 #include "renderer_view.h"
 #include "scene.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <memory>
 #include "glad/glad.h"
 #include "object/model.h"
@@ -19,8 +21,146 @@
 #include "shading/blinn_material.h"
 #include "utility.h"
 #include "resources/resources.h"
+#include "ImGuizmo/ImGuizmo.h"
 
 namespace MR {
+
+static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
+
+static const float identityMatrix[16] = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f,
+                                         0.f, 0.f, 0.f, 0.f, 1.f, 0.f,
+                                         0.f, 0.f, 0.f, 1.f};
+
+float objectMatrix[4][16] = {{1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f,
+                              1.f, 0.f, 0.f, 0.f, 0.f, 1.f},
+
+                             {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f,
+                              1.f, 0.f, 2.f, 0.f, 0.f, 1.f},
+
+                             {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f,
+                              1.f, 0.f, 2.f, 0.f, 2.f, 1.f},
+
+                             {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f,
+                              1.f, 0.f, 0.f, 0.f, 2.f, 1.f}};
+
+void EditTransform(float* cameraView, float* cameraProjection, float* matrix,
+                   bool editTransformDecomposition) {
+    static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
+    static bool useSnap = false;
+    static float snap[3] = {1.f, 1.f, 1.f};
+    static float bounds[] = {-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f};
+    static float boundsSnap[] = {0.1f, 0.1f, 0.1f};
+    static bool boundSizing = false;
+    static bool boundSizingSnap = false;
+
+    if (editTransformDecomposition) {
+        if (ImGui::IsKeyPressed(ImGuiKey_T))
+            mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+        if (ImGui::IsKeyPressed(ImGuiKey_E))
+            mCurrentGizmoOperation = ImGuizmo::ROTATE;
+        if (ImGui::IsKeyPressed(ImGuiKey_R))  // r Key
+            mCurrentGizmoOperation = ImGuizmo::SCALE;
+        if (ImGui::RadioButton("Translate",
+                               mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+            mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Rotate",
+                               mCurrentGizmoOperation == ImGuizmo::ROTATE))
+            mCurrentGizmoOperation = ImGuizmo::ROTATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Scale",
+                               mCurrentGizmoOperation == ImGuizmo::SCALE))
+            mCurrentGizmoOperation = ImGuizmo::SCALE;
+        if (ImGui::RadioButton("Universal",
+                               mCurrentGizmoOperation == ImGuizmo::UNIVERSAL))
+            mCurrentGizmoOperation = ImGuizmo::UNIVERSAL;
+        float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+        ImGuizmo::DecomposeMatrixToComponents(matrix, matrixTranslation,
+                                              matrixRotation, matrixScale);
+        ImGui::InputFloat3("Tr", matrixTranslation);
+        ImGui::InputFloat3("Rt", matrixRotation);
+        ImGui::InputFloat3("Sc", matrixScale);
+        ImGuizmo::RecomposeMatrixFromComponents(
+            matrixTranslation, matrixRotation, matrixScale, matrix);
+
+        if (mCurrentGizmoOperation != ImGuizmo::SCALE) {
+            if (ImGui::RadioButton("Local",
+                                   mCurrentGizmoMode == ImGuizmo::LOCAL))
+                mCurrentGizmoMode = ImGuizmo::LOCAL;
+            ImGui::SameLine();
+            if (ImGui::RadioButton("World",
+                                   mCurrentGizmoMode == ImGuizmo::WORLD))
+                mCurrentGizmoMode = ImGuizmo::WORLD;
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_S)) useSnap = !useSnap;
+        ImGui::Checkbox("##UseSnap", &useSnap);
+        ImGui::SameLine();
+
+        switch (mCurrentGizmoOperation) {
+            case ImGuizmo::TRANSLATE:
+                ImGui::InputFloat3("Snap", &snap[0]);
+                break;
+            case ImGuizmo::ROTATE:
+                ImGui::InputFloat("Angle Snap", &snap[0]);
+                break;
+            case ImGuizmo::SCALE:
+                ImGui::InputFloat("Scale Snap", &snap[0]);
+                break;
+        }
+        ImGui::Checkbox("Bound Sizing", &boundSizing);
+        if (boundSizing) {
+            ImGui::PushID(3);
+            ImGui::Checkbox("##BoundSizing", &boundSizingSnap);
+            ImGui::SameLine();
+            ImGui::InputFloat3("Snap", boundsSnap);
+            ImGui::PopID();
+        }
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+    float viewManipulateRight = io.DisplaySize.x;
+    float viewManipulateTop = 0;
+    static ImGuiWindowFlags gizmoWindowFlags = 0;
+    if (true) {
+        ImGui::SetNextWindowSize(ImVec2(800, 400), ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(ImVec2(400, 20), ImGuiCond_Appearing);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg,
+                              (ImVec4)ImColor(0.35f, 0.3f, 0.3f));
+        ImGui::Begin("Gizmo", 0, gizmoWindowFlags);
+        ImGuizmo::SetDrawlist();
+        float windowWidth = (float)ImGui::GetWindowWidth();
+        float windowHeight = (float)ImGui::GetWindowHeight();
+        ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y,
+                          windowWidth, windowHeight);
+        viewManipulateRight = ImGui::GetWindowPos().x + windowWidth;
+        viewManipulateTop = ImGui::GetWindowPos().y;
+        auto window = ImGui::GetCurrentWindow();
+        gizmoWindowFlags =
+            ImGui::IsWindowHovered() &&
+                    ImGui::IsMouseHoveringRect(window->InnerRect.Min,
+                                               window->InnerRect.Max)
+                ? ImGuiWindowFlags_NoMove
+                : 0;
+    } else {
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+    }
+
+    ImGuizmo::DrawGrid(cameraView, cameraProjection, identityMatrix, 100.f);
+    ImGuizmo::DrawCubes(cameraView, cameraProjection, &objectMatrix[0][0], 1);
+    ImGuizmo::Manipulate(cameraView, cameraProjection, mCurrentGizmoOperation,
+                         mCurrentGizmoMode, matrix, NULL,
+                         useSnap ? &snap[0] : NULL, boundSizing ? bounds : NULL,
+                         boundSizingSnap ? boundsSnap : NULL);
+
+    ImGuizmo::ViewManipulate(
+        cameraView, 8.0f, ImVec2(viewManipulateRight - 128, viewManipulateTop),
+        ImVec2(128, 128), 0x10101010);
+
+    if (true) {
+        ImGui::End();
+        ImGui::PopStyleColor(1);
+    }
+}
 
 void process_input(GLFWwindow* window, double delta_time);
 
@@ -201,10 +341,13 @@ void RendererView::load_model(std::string& file_path) {
 }
 
 void RendererView::render_main_side(const GLuint& image) {
-    ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_None);
+    float window_pos_x = 0.0f;
+    float window_pos_y = 0.0f;
+    float window_width = Scene::width * 0.8f;
+    float window_height = Scene::height * 0.8f;
+    ImGui::SetNextWindowPos(ImVec2(window_pos_x, window_pos_y), ImGuiCond_None);
     ImGui::SetNextWindowSize(
-        ImVec2(GLfloat(Scene::width * 0.8f), GLfloat(Scene::height * 0.8f)),
-        ImGuiCond_None);
+        ImVec2(GLfloat(window_width), GLfloat(window_height)), ImGuiCond_None);
     {
         ImGui::Begin("Main", NULL,
                      ImGuiWindowFlags_AlwaysAutoResize |
@@ -213,7 +356,27 @@ void RendererView::render_main_side(const GLuint& image) {
                          ImGuiWindowFlags_MenuBar);
         ImGui::Image((void*)(intptr_t)image, ImGui::GetContentRegionAvail(),
                      ImVec2(0, 1),
-                     ImVec2(1, 0));  // 设置imgui原点为左下角，与opengl保持一致
+                     ImVec2(1,
+                            0));  // 设置imgui原点为左下角，与opengl保持一致
+
+        // 渲染Gizmo
+        auto camera_view = Scene::camera->get_view_mat();
+        auto camera_proj = Scene::camera->get_projection();
+        auto matrix = Scene::entities[0].obj->get_transform_mat4();
+        ImGuizmo::SetOrthographic(false);
+        ImGuizmo::SetDrawlist();
+
+        ImGuizmo::SetRect(window_pos_x, window_pos_y, window_width,
+                          window_height);
+
+        ImGuizmo::Manipulate(glm::value_ptr(camera_view),
+                             glm::value_ptr(camera_proj), ImGuizmo::TRANSLATE,
+                             ImGuizmo::LOCAL, glm::value_ptr(matrix));
+
+        if (ImGuizmo::IsUsing()) {
+            Scene::entities[0].obj->translation = glm::vec3(matrix[3]);
+        }
+
         ImGui::End();
     }
 }
@@ -254,9 +417,11 @@ void RendererView::render_right_side() {
                 }
                 // obj_mat_->display_ui();
                 //  ImGui::DragFloat("Camera Pos X",
-                //  &Scene::camera->position.x); ImGui::DragFloat("Camera Pos
-                //  Y", &Scene::camera->position.y); ImGui::DragFloat("Camera
-                //  Pos Z", &Scene::camera->position.z);
+                //  &Scene::camera->position.x);
+                //  ImGui::DragFloat("Camera Pos Y",
+                //  &Scene::camera->position.y);
+                //  ImGui::DragFloat("Camera Pos Z",
+                //  &Scene::camera->position.z);
 
                 ImGui::EndTabItem();
             }
@@ -269,14 +434,16 @@ void RendererView::render_right_side() {
 void RendererView::switch_material() {
     if (cur_material_ == 0) {
         // blinn
-        obj_shader_ = std::make_shared<Shader>(
-            "assets/shaders/blinn_phong/blinn_phong.vs",
-            "assets/shaders/blinn_phong/blinn_phong.fs");
+        obj_shader_ = std::make_shared<Shader>("assets/shaders/blinn_phong/"
+                                               "blinn_phong.vs",
+                                               "assets/shaders/blinn_phong/"
+                                               "blinn_phong.fs");
 
         obj_mat_ = std::make_shared<BlinnMaterial>();
         obj_mat_->set_shader(obj_shader_.get());
         BlinnMaterial* mat = (BlinnMaterial*)obj_mat_.get();
-        mat->set_diffuse_map("assets/AfricanHead/african_head_diffuse.tga");
+        mat->set_diffuse_map("assets/AfricanHead/"
+                             "african_head_diffuse.tga");
     } else if (cur_material_ == 1) {
         // pbr
         obj_shader_ = std::make_shared<Shader>("assets/shaders/pbr/pbr.vs",

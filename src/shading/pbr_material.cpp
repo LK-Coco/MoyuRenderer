@@ -90,11 +90,11 @@ void PBRMaterial::fill_unifrom(const Object& obj) {
     shader_->use();
     shader_->set_mat4("projection", projection);
     shader_->set_mat4("view", view);
-    glm::mat4 model = obj.get_model_matrix();
+    glm::mat4 model = obj.get_transform_mat4();
     shader_->set_mat4("model", model);
     shader_->set_mat3("normalMatrix",
                       glm::transpose(glm::inverse(glm::mat3(model))));
-    shader_->set_vec3("camPos", Scene::camera->position);
+    shader_->set_vec3("camPos", Scene::camera->translation);
 
     for (int i = 0; i < 4; i++) {
         shader_->set_vec3("lightPositions[" + std::to_string(i) + "]",

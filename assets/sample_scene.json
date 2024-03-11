@@ -34,12 +34,11 @@
                 1.0,
                 1.0
             ],
-            "rotation_axis": [
-                1,
+            "rotation": [
+                0,
                 0,
                 0
             ],
-            "angle": 0.0,
             "material_prop": {
                 "IBL": false,
                 "albedo_map_path": "assets/rusted_iron/albedo.png",
@@ -61,12 +60,11 @@
                 3,
                 1
             ],
-            "rotation_axis": [
-                1,
+            "rotation": [
+                -90,
                 0,
                 0
             ],
-            "angle": -90.0,
             "material_prop": {
                 "IBL": false,
                 "albedo_map_path": "assets/brick_wall/albedo.png",

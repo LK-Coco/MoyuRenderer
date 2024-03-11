@@ -1,0 +1,3 @@
+[submodule "deps/jyu_app"]
+	path = deps/jyu_app
+	url = git@github.com:LK-Coco/jyu_app.git

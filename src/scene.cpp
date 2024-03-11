@@ -108,16 +108,15 @@ void Scene::load_json(const char* file_path) {
 
         auto entity = get_entity(json_model["mesh"]);
         nlohmann::json json_pos = json_model["position"];
-        entity.obj->position = glm::vec3((float)json_pos[0], (float)json_pos[1],
-                                         (float)json_pos[2]);
+        entity.obj->translation = glm::vec3(
+            (float)json_pos[0], (float)json_pos[1], (float)json_pos[2]);
         nlohmann::json json_scale = json_model["scale"];
         entity.obj->scale = glm::vec3(
             (float)json_scale[0], (float)json_scale[1], (float)json_scale[2]);
-        nlohmann::json json_rotate = json_model["rotation_axis"];
-        entity.obj->rotation_axis =
+        nlohmann::json json_rotate = json_model["rotation"];
+        entity.obj->rotation =
             glm::vec3((float)json_rotate[0], (float)json_rotate[1],
                       (float)json_rotate[2]);
-        entity.obj->angle = glm::radians((float)json_model["angle"]);
 
         nlohmann::json json_prop = json_model["material_prop"];
         entity.material_prop.IBL = json_prop["IBL"];

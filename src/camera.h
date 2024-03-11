@@ -1,8 +1,8 @@
 #pragma once
 
-#include "glm/glm.hpp"
-#include <glm/gtc/matrix_transform.hpp>
+#include "transform.h"
 #include "geometry.h"
+#include "jyu_app/src/input.h"
 
 namespace MR {
 
@@ -11,10 +11,10 @@ constexpr float MovementSpeed = 5.0f;
 
 enum class CameraMovement { FORWARD, BACKWARD, LEFT, RIGHT };
 
-class Camera {
+class Camera : public Transform {
 public:
     Camera(glm::vec3 pos, float yaw = -90.0f, float pitch = 0.0f)
-        : position(pos),
+        : Transform(pos),
           front_(glm::vec3(0.0f, 0.0f, -1.0f)),
           yaw(yaw),
           pitch(pitch) {
@@ -22,14 +22,17 @@ public:
     }
 
     Camera(glm::vec3 pos, glm::vec3 tar, float fov, float ar, float near_p,
-           float far_p) {
-        position = pos;
+           float far_p)
+        : Transform(pos) {
         target = tar;
-        front_ = glm::normalize(target - position);
+        front_ = glm::normalize(target - translation);
         right_ = glm::normalize(glm::cross(front_, WORLD_UP));
         up_ = glm::normalize(glm::cross(right_, front_));
         pitch = calc_pitch(front_);
         yaw = calc_yaw(front_, pitch);
+
+        rotation.x = -pitch;
+        rotation.y = -yaw;
 
         frustum.fov = fov;
         frustum.ar = ar;
@@ -39,8 +42,8 @@ public:
         projection_mat_ =
             glm::perspective(glm::radians(frustum.fov), frustum.ar,
                              frustum.near_plane, frustum.far_plane);
-        view_mat_ = glm::lookAt(position, target, up_);
-        frustum.update_planes(view_mat_, position);
+        view_mat_ = glm::lookAt(translation, target, up_);
+        frustum.update_planes(view_mat_, translation);
     }
 
     bool check_visibility(const AABB& bounds) {
@@ -52,6 +55,33 @@ public:
     glm::mat4 get_view_mat() const { return view_mat_; }
 
     float get_zoom() const { return zoom_; }
+
+    void update(float dt) {
+        auto mouse_pos = Jyu::Input::get_mouse_position();
+        // TODO need refactor
+        float cur_x = 1280 - static_cast<float>(mouse_pos.x);
+        float cur_y = 720 - static_cast<float>(mouse_pos.y);
+        if (Jyu::Input::is_mouse_button_down(Jyu::MouseButton::Right)) {
+            float delta_x = cur_x - mouse_pos_x_;
+            float delta_y = mouse_pos_y_ - cur_y;
+            on_process_mouse_move(delta_x, delta_y);
+        }
+        mouse_pos_x_ = cur_x;
+        mouse_pos_y_ = cur_y;
+
+        if (Jyu::Input::is_key_down(Jyu::KeyCode::W)) {
+            on_process_keyboard(CameraMovement::FORWARD, dt);
+        }
+        if (Jyu::Input::is_key_down(Jyu::KeyCode::A)) {
+            on_process_keyboard(CameraMovement::LEFT, dt);
+        }
+        if (Jyu::Input::is_key_down(Jyu::KeyCode::D)) {
+            on_process_keyboard(CameraMovement::RIGHT, dt);
+        }
+        if (Jyu::Input::is_key_down(Jyu::KeyCode::S)) {
+            on_process_keyboard(CameraMovement::BACKWARD, dt);
+        }
+    }
 
     void on_process_mouse_scroll(float scroll) {
         zoom_ -= (float)scroll;
@@ -73,16 +103,17 @@ public:
 
     void on_process_keyboard(CameraMovement direction, float delta_time) {
         float velocity = MovementSpeed * delta_time;
-        if (direction == CameraMovement::FORWARD) position += front_ * velocity;
+        if (direction == CameraMovement::FORWARD)
+            translation += front_ * velocity;
         if (direction == CameraMovement::BACKWARD)
-            position -= front_ * velocity;
-        if (direction == CameraMovement::LEFT) position -= right_ * velocity;
-        if (direction == CameraMovement::RIGHT) position += right_ * velocity;
+            translation -= front_ * velocity;
+        if (direction == CameraMovement::LEFT) translation -= right_ * velocity;
+        if (direction == CameraMovement::RIGHT)
+            translation += right_ * velocity;
 
         update_mat4();
     }
 
-    glm::vec3 position;
     glm::vec3 target;
     float yaw;
     float pitch;
@@ -95,7 +126,8 @@ private:
     }
 
     float calc_yaw(glm::vec3 front, float pitch) const {
-        return glm::degrees(glm::acos(front.x / cos(glm::radians(pitch))));
+        return glm::degrees(glm::atan(
+            front.x / front.z));  //(front.x / cos(glm::radians(pitch))));
     }
 
     void update_front() {
@@ -109,9 +141,9 @@ private:
     }
 
     void update_mat4() {
-        target = position + front_;
-        view_mat_ = glm::lookAt(position, target, up_);
-        frustum.update_planes(view_mat_, position);
+        target = translation + front_;
+        view_mat_ = glm::lookAt(translation, target, up_);
+        frustum.update_planes(view_mat_, translation);
         projection_mat_ =
             glm::perspective(glm::radians(frustum.fov), frustum.ar,
                              frustum.near_plane, frustum.far_plane);
@@ -124,6 +156,9 @@ private:
 
     glm::mat4 projection_mat_;
     glm::mat4 view_mat_;
+
+    float mouse_pos_x_ = 0;
+    float mouse_pos_y_ = 0;
 };
 
 }  // namespace MR

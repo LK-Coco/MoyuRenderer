@@ -1,9 +1,12 @@
 #include <iostream>
-#include "renderer_view.h"
+#include "jyu_app/src/application.h"
+#include "editor_layer.h"
 
 using namespace std;
 
 int main(int argc, char** argv) {
-    MR::RendererView viewer(1280, 720);
-    viewer.run();
+    Jyu::ApplicationSpec spec{"Render Demo", 1280, 720};
+    Jyu::Application app(spec);
+    app.push_layer<MR::EditorLayer>();
+    app.run();
 }

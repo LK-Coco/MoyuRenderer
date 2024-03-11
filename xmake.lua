@@ -7,11 +7,12 @@ add_requires("glfw 3.3.8")
 add_requires("glm 0.9.9+8")
 add_requires("spdlog 1.11.0",{configs = {fmt_external = true}})
 add_requires("assimp 5.2.5")
+--add_requires("imguizmo 1.89+WIP")
 
 target("MoyuRenderer")
     set_kind("binary")
-    add_includedirs("src")
-    add_files("src/**.cpp")
+    add_includedirs("src","deps")
+    add_files("src/**.cpp","deps/**.cpp")
     if is_plat("windows") then
         add_links("Comdlg32")
     end

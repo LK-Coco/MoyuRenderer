@@ -86,7 +86,7 @@ void Rasterizer::forward_render() {
     pbr_shader_.set_mat4("lightSpaceMatrix", Scene::dir_light.light_space_mat);
     pbr_shader_.set_mat4("projection", Scene::camera->get_projection());
     pbr_shader_.set_mat4("view", Scene::camera->get_view_mat());
-    pbr_shader_.set_vec3("camPos", Scene::camera->position);
+    pbr_shader_.set_vec3("camPos", Scene::camera->translation);
     pbr_shader_.set_vec3("dirLight.direction", Scene::dir_light.direction);
     pbr_shader_.set_vec3("dirLight.color", Scene::dir_light.color);
 
@@ -122,7 +122,7 @@ void Rasterizer::forward_render() {
     }
 
     for (auto& entity : Scene::entities) {
-        auto model = entity.obj->get_model_matrix();
+        auto model = entity.obj->get_transform_mat4();
         auto& prop = entity.material_prop;
         pbr_shader_.set_bool("IBL", entity.material_prop.IBL);
         pbr_shader_.set_mat4("model", model);
@@ -359,7 +359,7 @@ void Rasterizer::draw_dir_light_shadow_forward() {
 
     for (auto& model : Scene::entities) {
         glm::mat4 model_ls =
-            Scene::dir_light.light_space_mat * model.obj->get_model_matrix();
+            Scene::dir_light.light_space_mat * model.obj->get_transform_mat4();
         dir_light_shader_.use();
         dir_light_shader_.set_mat4("lightSpaceMatrix", model_ls);
         model.render();
@@ -389,7 +389,7 @@ void Rasterizer::draw_point_light_shadow_forward() {
         }
 
         for (auto& model : Scene::entities) {
-            M = model.obj->get_model_matrix();
+            M = model.obj->get_transform_mat4();
             point_light_shader_.set_mat4("M", M);
             model.render();
         }
@@ -448,7 +448,7 @@ void Rasterizer::draw_depth_pass() {
     glm::mat4 VP = projection * view;
 
     for (auto& model : Scene::entities) {
-        MVP = VP * model.obj->get_model_matrix();
+        MVP = VP * model.obj->get_transform_mat4();
 
         depth_shader_.use();
         depth_shader_.set_mat4("MVP", MVP);
@@ -483,7 +483,7 @@ void Rasterizer::draw_objects() {
         "dirLight.color", Scene::dir_light.strength * Scene::dir_light.color);
     pbr_cluster_shader_.set_mat4("lightSpaceMatrix",
                                  Scene::dir_light.light_space_mat);
-    pbr_cluster_shader_.set_vec3("cameraPos_wS", Scene::camera->position);
+    pbr_cluster_shader_.set_vec3("cameraPos_wS", Scene::camera->translation);
     pbr_cluster_shader_.set_float("zFar", 300.0);
     pbr_cluster_shader_.set_float("zNear", 1.0);
 
@@ -524,7 +524,7 @@ void Rasterizer::draw_objects() {
     lut_map->bind(num_textures + point_light_count + 3);
 
     for (auto& model : Scene::entities) {
-        M = model.obj->get_model_matrix();
+        M = model.obj->get_transform_mat4();
         auto& prop = model.material_prop;
         MVP = VP * M;
 
