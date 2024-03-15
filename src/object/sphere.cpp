@@ -92,4 +92,23 @@ void Sphere::render() {
     glDrawElements(GL_TRIANGLE_STRIP, index_count_, GL_UNSIGNED_INT, 0);
 }
 
+bool Sphere::hit(Ray& ray) {
+    float r = std::max(std::max(std::abs(scale.x), std::abs(scale.y)),
+                       std::abs(scale.z));
+
+    glm::vec3 oc = translation - ray.origin;
+    float a = glm::length(oc);
+    float l = glm::dot(oc, ray.direction);
+    if (l < 0 && a < r) return false;
+    float m2 = a * a - l * l;
+    if (m2 > (r * r)) return false;
+    float q = std::sqrt(r * r - m2);
+    if (l * l > r * r)
+        ray.distance = l - q;
+    else
+        ray.distance = l + q;
+
+    return true;
+}
+
 }  // namespace MR

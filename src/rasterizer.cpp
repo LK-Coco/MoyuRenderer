@@ -129,14 +129,14 @@ void Rasterizer::forward_render() {
         pbr_shader_.set_mat3("normalMatrix",
                              glm::transpose(glm::inverse(glm::mat3(model))));
 
-        prop.albedo_map->bind(0);
-        prop.normal_map->bind(1);
-        prop.metallic_map->bind(2);
-        prop.roughness_map->bind(3);
-        prop.ao_map->bind(4);
-        prop.irradiance_map->bind(5);
-        prop.prefilter_map->bind(6);
-        prop.lut_map->bind(7);
+        if (prop.albedo_map != nullptr) prop.albedo_map->bind(0);
+        if (prop.normal_map != nullptr) prop.normal_map->bind(1);
+        if (prop.metallic_map != nullptr) prop.metallic_map->bind(2);
+        if (prop.roughness_map != nullptr) prop.roughness_map->bind(3);
+        if (prop.ao_map != nullptr) prop.ao_map->bind(4);
+        if (prop.irradiance_map != nullptr) prop.irradiance_map->bind(5);
+        if (prop.prefilter_map != nullptr) prop.prefilter_map->bind(6);
+        if (prop.lut_map != nullptr) prop.lut_map->bind(7);
 
         entity.render();
     }

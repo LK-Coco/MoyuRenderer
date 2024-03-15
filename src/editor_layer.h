@@ -26,7 +26,10 @@ private:
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
     ImGuizmo::MODE gizmo_mode_ = ImGuizmo::LOCAL;
     bool use_snap_;
-    float snap[3] = {1.f, 1.f, 1.f};
+    float snap_[3] = {1.f, 1.f, 1.f};
+
+    float mouse_pos_x_ = 0;
+    float mouse_pos_y_ = 0;
 };
 
 }  // namespace MR

@@ -3,6 +3,7 @@
 #include "transform.h"
 #include "geometry.h"
 #include "jyu_app/src/input.h"
+#include "ray.h"
 
 namespace MR {
 
@@ -56,18 +57,24 @@ public:
 
     float get_zoom() const { return zoom_; }
 
-    void update(float dt) {
-        auto mouse_pos = Jyu::Input::get_mouse_position();
+    Ray screen_point_to_ray(glm::vec3 pos) const {
+        auto world_pos =
+            glm::unProject(pos, view_mat_, projection_mat_,
+                           glm::vec4(0, 0, 1280 * 0.8f, 720 * 0.8f));
+
+        Ray ret;
+        ret.origin = world_pos;
+        ret.direction = glm::normalize(ret.origin - translation);
+
+        return ret;
+    }
+
+    void update(float dt, float delta_x, float delta_y) {
         // TODO need refactor
-        float cur_x = 1280 - static_cast<float>(mouse_pos.x);
-        float cur_y = 720 - static_cast<float>(mouse_pos.y);
+
         if (Jyu::Input::is_mouse_button_down(Jyu::MouseButton::Right)) {
-            float delta_x = cur_x - mouse_pos_x_;
-            float delta_y = mouse_pos_y_ - cur_y;
             on_process_mouse_move(delta_x, delta_y);
         }
-        mouse_pos_x_ = cur_x;
-        mouse_pos_y_ = cur_y;
 
         if (Jyu::Input::is_key_down(Jyu::KeyCode::W)) {
             on_process_keyboard(CameraMovement::FORWARD, dt);
@@ -126,8 +133,7 @@ private:
     }
 
     float calc_yaw(glm::vec3 front, float pitch) const {
-        return glm::degrees(glm::atan(
-            front.x / front.z));  //(front.x / cos(glm::radians(pitch))));
+        return glm::degrees(acos(front.x / cos(glm::radians(pitch))));
     }
 
     void update_front() {
@@ -156,9 +162,6 @@ private:
 
     glm::mat4 projection_mat_;
     glm::mat4 view_mat_;
-
-    float mouse_pos_x_ = 0;
-    float mouse_pos_y_ = 0;
 };
 
 }  // namespace MR

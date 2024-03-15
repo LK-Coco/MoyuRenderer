@@ -2,6 +2,8 @@
 #include "scene.h"
 #include "rasterizer.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "jyu_app/src/application.h"
+#include "physics.h"
 
 #include <iostream>
 
@@ -13,11 +15,48 @@ void EditorLayer::on_start() {
 
     renderer_ = std::make_shared<Rasterizer>();
 
+    glfwSetWindowSizeCallback(Jyu::Application::get().get_window_handle(),
+                              [](GLFWwindow* window, int width, int height) {
+                                  glViewport(0, 0, width, height);
+                                  Scene::width = width;
+                                  Scene::height = height;
+                              });
+
+    glfwSetMouseButtonCallback(
+        Jyu::Application::get().get_window_handle(),
+        [](GLFWwindow* window, int button, int action, int mods) {
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+                auto mouse_pos = Jyu::Input::get_mouse_position();
+                Ray ray = Scene::camera->screen_point_to_ray(
+                    glm::vec3(mouse_pos.x, mouse_pos.y, 0));
+
+                std::cout << ray.origin.x << "   " << ray.origin.y << std::endl;
+
+                HitResult result;
+                if (Physics::ray_cast(ray.origin, ray.direction, result)) {
+                    Scene::selected_entity = result.hit_entity;
+                } else {
+                    Scene::selected_entity = nullptr;
+                }
+            }
+        });
+
+    mouse_pos_x_ = Scene::width * 0.5f;
+    mouse_pos_y_ = Scene::height * 0.5f;
+
     std::cout << "init render view ok!" << std::endl;
 }
 
 void EditorLayer::on_update(float dt) {
-    Scene::camera->update(dt);
+    auto mouse_pos = Jyu::Input::get_mouse_position();
+    // float cur_x = Scene::width - static_cast<float>(mouse_pos.x);
+    // float cur_y = Scene::height - static_cast<float>(mouse_pos.y);
+    float delta_x = mouse_pos_x_ - mouse_pos.x;
+    float delta_y = mouse_pos.y - mouse_pos_y_;
+    mouse_pos_x_ = mouse_pos.x;
+    mouse_pos_y_ = mouse_pos.y;
+    Scene::camera->update(dt, delta_x, delta_y);
+
     renderer_->render();
 }
 
@@ -47,31 +86,35 @@ void EditorLayer::render_main_side(const GLuint& image) {
                             0));  // 设置imgui原点为左下角，与opengl保持一致
 
         // 渲染Gizmo
-        auto camera_view = Scene::camera->get_view_mat();
-        auto camera_proj = Scene::camera->get_projection();
-        auto matrix = Scene::entities[0].obj->get_transform_mat4();
-        ImGuizmo::SetOrthographic(false);
-        ImGuizmo::SetDrawlist();
+        if (Scene::selected_entity != nullptr) {
+            Entity* entity = Scene::selected_entity;
+            auto camera_view = Scene::camera->get_view_mat();
+            auto camera_proj = Scene::camera->get_projection();
+            auto matrix = entity->obj->get_transform_mat4();
+            ImGuizmo::SetOrthographic(false);
+            ImGuizmo::SetDrawlist();
 
-        ImGuizmo::SetRect(window_pos_x, window_pos_y, window_width,
-                          window_height);
+            ImGuizmo::SetRect(window_pos_x, window_pos_y, window_width,
+                              window_height);
 
-        ImGuizmo::Manipulate(glm::value_ptr(camera_view),
-                             glm::value_ptr(camera_proj), gizmo_operation_,
-                             gizmo_mode_, glm::value_ptr(matrix));
+            ImGuizmo::Manipulate(glm::value_ptr(camera_view),
+                                 glm::value_ptr(camera_proj), gizmo_operation_,
+                                 gizmo_mode_, glm::value_ptr(matrix));
 
-        if (ImGuizmo::IsUsing()) {
-            float matrix_translation[3], matrix_rotation[3], matrix_scale[3];
-            ImGuizmo::DecomposeMatrixToComponents(
-                glm::value_ptr(matrix), matrix_translation, matrix_rotation,
-                matrix_scale);
-            Scene::entities[0].obj->translation =
-                glm::vec3(matrix_translation[0], matrix_translation[1],
-                          matrix_translation[2]);
-            Scene::entities[0].obj->rotation = glm::vec3(
-                matrix_rotation[0], matrix_rotation[1], matrix_rotation[2]);
-            Scene::entities[0].obj->scale =
-                glm::vec3(matrix_scale[0], matrix_scale[1], matrix_scale[2]);
+            if (ImGuizmo::IsUsing()) {
+                float matrix_translation[3], matrix_rotation[3],
+                    matrix_scale[3];
+                ImGuizmo::DecomposeMatrixToComponents(
+                    glm::value_ptr(matrix), matrix_translation, matrix_rotation,
+                    matrix_scale);
+                entity->obj->translation =
+                    glm::vec3(matrix_translation[0], matrix_translation[1],
+                              matrix_translation[2]);
+                entity->obj->rotation = glm::vec3(
+                    matrix_rotation[0], matrix_rotation[1], matrix_rotation[2]);
+                entity->obj->scale = glm::vec3(matrix_scale[0], matrix_scale[1],
+                                               matrix_scale[2]);
+            }
         }
 
         ImGui::End();
@@ -166,9 +209,11 @@ void EditorLayer::render_gizmo_bar() {
     ImGui::Checkbox("##UseSnap", &use_snap_);
     ImGui::SameLine();
     switch (gizmo_operation_) {
-        case ImGuizmo::TRANSLATE: ImGui::InputFloat3("Snap", &snap[0]); break;
-        case ImGuizmo::ROTATE: ImGui::InputFloat("Angle Snap", &snap[0]); break;
-        case ImGuizmo::SCALE: ImGui::InputFloat("Scale Snap", &snap[0]); break;
+        case ImGuizmo::TRANSLATE: ImGui::InputFloat3("Snap", &snap_[0]); break;
+        case ImGuizmo::ROTATE:
+            ImGui::InputFloat("Angle Snap", &snap_[0]);
+            break;
+        case ImGuizmo::SCALE: ImGui::InputFloat("Scale Snap", &snap_[0]); break;
     }
 }
 

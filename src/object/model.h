@@ -13,7 +13,7 @@ namespace MR {
 
 class Model : public Object {
 public:
-    Model(std::string file_path);
+    Model(const std::string& file_path);
 
     virtual void render() override;
 

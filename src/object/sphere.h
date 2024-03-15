@@ -11,6 +11,8 @@ public:
 
     virtual void render() override;
 
+    bool hit(Ray& ray) override;
+
 private:
     unsigned int vao_;
     GLsizei index_count_;

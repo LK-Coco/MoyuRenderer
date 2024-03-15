@@ -23,6 +23,32 @@
     },
     "models": [
         {
+            "mesh": "D:/Git_projects/___(Soft)Renderer/renderer/assets/assassin/body.obj",
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                0.01,
+                0.01,
+                0.01
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "material_prop": {
+                "IBL": false,
+                "albedo_map_path": "D:/Git_projects/___(Soft)Renderer/renderer/assets/assassin/body_basecolor.tga",
+                "normal_map_path": "D:/Git_projects/___(Soft)Renderer/renderer/assets/assassin/body_normal.tga",
+                "metallic_map_path": "D:/Git_projects/___(Soft)Renderer/renderer/assets/assassin/body_metalness.tga",
+                "roughness_map_path": "D:/Git_projects/___(Soft)Renderer/renderer/assets/assassin/body_roughness.tga",
+                "ao_map_path": ""
+            }
+        },
+        {
             "mesh": "sphere",
             "position": [
                 0.0,
@@ -30,9 +56,9 @@
                 0.0
             ],
             "scale": [
-                1.0,
-                1.0,
-                1.0
+                1,
+                1,
+                1
             ],
             "rotation": [
                 0,
@@ -56,8 +82,8 @@
                 0.0
             ],
             "scale": [
-                3,
-                3,
+                8,
+                8,
                 1
             ],
             "rotation": [

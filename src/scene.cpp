@@ -5,6 +5,7 @@
 #include <fstream>
 #include "object/sphere.h"
 #include "object/quad.h"
+#include "object/model.h"
 
 namespace MR {
 
@@ -26,6 +27,8 @@ std::vector<PointLight> Scene::point_light;
 
 std::vector<Entity> Scene::entities;
 
+Entity* Scene::selected_entity = nullptr;
+
 DirLight Scene::dir_light;
 
 Entity get_entity(const std::string& name) {
@@ -33,9 +36,9 @@ Entity get_entity(const std::string& name) {
         return Entity(std::make_shared<Sphere>());
     } else if (name == "quad") {
         return Entity(std::make_shared<Quad>());
+    } else {
+        return Entity(std::make_shared<Model>(name));
     }
-
-    return Entity(std::make_shared<Sphere>());
 }
 
 void Scene::load_json(const char* file_path) {

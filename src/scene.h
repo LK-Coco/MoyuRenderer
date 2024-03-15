@@ -20,6 +20,9 @@ public:
     static std::vector<PointLight> point_light;
 
     static std::vector<Entity> entities;
+
+    static Entity* selected_entity;
+
     static DirLight dir_light;
 
     static void load_json(const char* file_path);
