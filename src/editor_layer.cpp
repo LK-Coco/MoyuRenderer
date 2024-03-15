@@ -22,25 +22,6 @@ void EditorLayer::on_start() {
                                   Scene::height = height;
                               });
 
-    glfwSetMouseButtonCallback(
-        Jyu::Application::get().get_window_handle(),
-        [](GLFWwindow* window, int button, int action, int mods) {
-            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-                auto mouse_pos = Jyu::Input::get_mouse_position();
-                Ray ray = Scene::camera->screen_point_to_ray(
-                    glm::vec3(mouse_pos.x, mouse_pos.y, 0));
-
-                std::cout << ray.origin.x << "   " << ray.origin.y << std::endl;
-
-                HitResult result;
-                if (Physics::ray_cast(ray.origin, ray.direction, result)) {
-                    Scene::selected_entity = result.hit_entity;
-                } else {
-                    Scene::selected_entity = nullptr;
-                }
-            }
-        });
-
     mouse_pos_x_ = Scene::width * 0.5f;
     mouse_pos_y_ = Scene::height * 0.5f;
 
@@ -49,13 +30,24 @@ void EditorLayer::on_start() {
 
 void EditorLayer::on_update(float dt) {
     auto mouse_pos = Jyu::Input::get_mouse_position();
-    // float cur_x = Scene::width - static_cast<float>(mouse_pos.x);
-    // float cur_y = Scene::height - static_cast<float>(mouse_pos.y);
     float delta_x = mouse_pos_x_ - mouse_pos.x;
     float delta_y = mouse_pos.y - mouse_pos_y_;
     mouse_pos_x_ = mouse_pos.x;
     mouse_pos_y_ = mouse_pos.y;
     Scene::camera->update(dt, delta_x, delta_y);
+
+    if (ImGui::IsMouseClicked(0) && !ImGuizmo::IsUsing() &&
+        !ImGuizmo::IsOver()) {
+        Ray ray = Scene::camera->screen_point_to_ray(
+            glm::vec3(mouse_pos.x, mouse_pos.y, 0));
+
+        HitResult result;
+        if (Physics::ray_cast(ray.origin, ray.direction, result)) {
+            Scene::selected_entity = result.hit_entity;
+        } else {
+            Scene::selected_entity = nullptr;
+        }
+    }
 
     renderer_->render();
 }
