@@ -75,10 +75,7 @@ struct DirLight : public BaseLight {
 struct GPULight {
     glm::vec3 position;
     glm::vec3 color;
-    unsigned int enabled;
-    float intensity;
-    float range;
-    float padding;
+    float radius;
 };
 
 }  // namespace MR

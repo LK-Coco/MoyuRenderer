@@ -11,7 +11,14 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
     GLuint tex_id;
     glGenTextures(1, &tex_id);
     switch (attach_type) {
-        case GLAttachmentType::MULT_2D_HDR_COL:
+        case GLAttachmentType::COL_RGB_HDR_2D:
+            glBindTexture(GL_TEXTURE_2D, tex_id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB,
+                         GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            break;
+        case GLAttachmentType::COL_MULT_HDR_2D:
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex_id);
             glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA16F,
                                     width, height, GL_TRUE);
@@ -20,10 +27,10 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
                                    GL_COLOR_ATTACHMENT0 + attach_index,
                                    GL_TEXTURE_2D_MULTISAMPLE, tex_id, 0);
             break;
-        case GLAttachmentType::SING_2D_HDR_COL:
+        case GLAttachmentType::COL_RGBA_HDR_2D:
             glBindTexture(GL_TEXTURE_2D, tex_id);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGB,
-                         GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0,
+                         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -31,7 +38,7 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
                                    GL_COLOR_ATTACHMENT0 + attach_index,
                                    GL_TEXTURE_2D, tex_id, 0);
             break;
-        case GLAttachmentType::MULT_2D_HDR_DEP:
+        case GLAttachmentType::DEP_MULT_HDR_2D:
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex_id);
             glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4,
                                     GL_DEPTH_COMPONENT32F, width, height,
@@ -40,7 +47,7 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                    GL_TEXTURE_2D_MULTISAMPLE, tex_id, 0);
             break;
-        case GLAttachmentType::SING_2D_HDR_DEP:
+        case GLAttachmentType::DEP_HDR_2D:
             glBindTexture(GL_TEXTURE_2D, tex_id);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height,
                          0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -50,10 +57,10 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                    GL_TEXTURE_2D, tex_id, 0);
             break;
-        case GLAttachmentType::SING_2D_HDR_COL_CLAMP:
+        case GLAttachmentType::COL_HDR_CLAMP_2D:
             glBindTexture(GL_TEXTURE_2D, tex_id);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGB,
-                         GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0,
+                         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -63,7 +70,7 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
                                    GL_COLOR_ATTACHMENT0 + attach_index,
                                    GL_TEXTURE_2D, tex_id, 0);
             break;
-        case GLAttachmentType::SING_2D_HDR_DEP_BORDER:
+        case GLAttachmentType::DEP_HDR_BORDER_2D:
             glBindTexture(GL_TEXTURE_2D, tex_id);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height,
                          0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -84,7 +91,7 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
                                    GL_TEXTURE_2D, tex_id, 0);
             break;
 
-        case GLAttachmentType::SING_2D_HDR_COL_FLOAT:
+        case GLAttachmentType::COL_HDR_FLOAT_2D:
             glBindTexture(GL_TEXTURE_2D, tex_id);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0,
                          GL_RGBA, GL_FLOAT, NULL);
@@ -110,10 +117,10 @@ void FrameBuffer::init() {
     glGenFramebuffers(1, &fb_id);
     glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 
-    attach_color_id =
-        attach(GLAttachmentType::SING_2D_HDR_COL, 0, width, height);
-    attach_depth_id =
-        attach(GLAttachmentType::SING_2D_HDR_DEP, 0, width, height);
+    auto attach_color_id =
+        attach(GLAttachmentType::COL_RGB_HDR_2D, 0, width, height);
+    attach_color_ids_.push_back(attach_color_id);
+    attach_depth_id = attach(GLAttachmentType::DEP_HDR_2D, 0, width, height);
 
     check_completeness("FrameBuffer");
 }
@@ -185,28 +192,19 @@ void CaptureFBO::resize(int w, int h) {
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
 }
 
-void MultiSampledFBO::init() {
-    glGenFramebuffers(1, &fb_id);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-
-    attach_color_id =
-        attach(GLAttachmentType::MULT_2D_HDR_COL, 0, width, height);
-    attach_depth_id =
-        attach(GLAttachmentType::MULT_2D_HDR_DEP, 0, width, height);
-
-    check_completeness("MultiSampledFBO");
-}
-
 void MultiColorFBO::init() {
     glGenFramebuffers(1, &fb_id);
     glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 
-    attach_color_id =
-        attach(GLAttachmentType::SING_2D_HDR_COL_FLOAT, 0, width, height);
-    attach_color_1_id =
-        attach(GLAttachmentType::SING_2D_HDR_COL_FLOAT, 1, width, height);
-    attach_depth_id =
-        attach(GLAttachmentType::SING_2D_HDR_DEP, 0, width, height);
+    auto attach_color_id =
+        attach(GLAttachmentType::COL_HDR_FLOAT_2D, 0, width, height);
+    auto attach_color_1_id =
+        attach(GLAttachmentType::COL_HDR_FLOAT_2D, 1, width, height);
+
+    attach_color_ids_.push_back(attach_color_id);
+    attach_color_ids_.push_back(attach_color_1_id);
+
+    attach_depth_id = attach(GLAttachmentType::DEP_HDR_2D, 0, width, height);
 
     unsigned int attachments[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     glDrawBuffers(2, attachments);
@@ -214,26 +212,13 @@ void MultiColorFBO::init() {
     check_completeness("MultiColorFBO");
 }
 
-void ResolveBufferFBO::init() {
-    glGenFramebuffers(1, &fb_id);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-
-    attach_color_id =
-        attach(GLAttachmentType::SING_2D_HDR_COL, 0, width, height);
-    attach_depth_id =
-        attach(GLAttachmentType::SING_2D_HDR_DEP, 0, width, height);
-    blur_high_end =
-        attach(GLAttachmentType::SING_2D_HDR_COL_CLAMP, 1, width, height);
-
-    check_completeness("ResolveBufferFBO");
-}
-
 void QuadHDRBufferFBO::init() {
     glGenFramebuffers(1, &fb_id);
     glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 
-    attach_color_id =
-        attach(GLAttachmentType::SING_2D_HDR_COL_FLOAT, 0, width, height);
+    auto attach_color_id =
+        attach(GLAttachmentType::COL_HDR_FLOAT_2D, 0, width, height);
+    attach_color_ids_.push_back(attach_color_id);
 
     check_completeness("QuadHDRBufferFBO");
 }
@@ -243,7 +228,7 @@ void DirShadowBufferFBO::init() {
     glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 
     attach_depth_id =
-        attach(GLAttachmentType::SING_2D_HDR_DEP_BORDER, 0, width, height);
+        attach(GLAttachmentType::DEP_HDR_BORDER_2D, 0, width, height);
 
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
@@ -281,6 +266,30 @@ void PointShadowBufferFBO::init() {
     attach_depth_id = depth_cubemap;
 
     check_completeness("PointShadowBufferFBO");
+}
+
+void GBufferFBO::init() {
+    glGenFramebuffers(1, &fb_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+
+    auto albedo_m_id =
+        attach(GLAttachmentType::COL_RGBA_HDR_2D, 0, width, height);
+    auto normal_r_id =
+        attach(GLAttachmentType::COL_RGBA_HDR_2D, 1, width, height);
+    auto position_a_id =
+        attach(GLAttachmentType::COL_RGBA_HDR_2D, 2, width, height);
+
+    attach_color_ids_.push_back(albedo_m_id);
+    attach_color_ids_.push_back(normal_r_id);
+    attach_color_ids_.push_back(position_a_id);
+
+    attach_depth_id = attach(GLAttachmentType::DEP_HDR_2D, 0, width, height);
+
+    unsigned int attachments[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+                                   GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, attachments);
+
+    check_completeness("GBufferFBO");
 }
 
 }  // namespace MR

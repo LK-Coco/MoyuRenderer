@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 #include "rasterizer.h"
 #include "scene.h"
 #include "resources/resources.h"
@@ -8,7 +9,8 @@ namespace MR {
 
 Rasterizer::Rasterizer()
     : multi_color_fbo_(Scene::width, Scene::height),
-      fbo_(Scene::width, Scene::height) {
+      fbo_(Scene::width, Scene::height),
+      gbuffer_fbo_(Scene::width, Scene::height) {
     num_lights_ = Scene::point_light.size();
     for (int i = 0; i < num_lights_; ++i) {
         auto res = Scene::point_light[i].shadow_res;
@@ -29,11 +31,33 @@ Rasterizer::Rasterizer()
     }
     fbo_.init();
 
+    gbuffer_fbo_.init();
+
     load_shaders();
 
-    // init_ssbo();
-
-    pre_process();
+    // 随机设置延迟渲染的点光源信息
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dist_xz(-3, 3);
+    std::uniform_real_distribution<> dist_y(0, 3);
+    std::uniform_real_distribution<> dist_c(1.5f, 3.f);
+    for (int i = 0; i < DEFERRED_LIGHT_COUNT; i++) {
+        vec3 position = vec3(dist_xz(gen), dist_y(gen), dist_xz(gen));
+        vec3 color = vec3(dist_c(gen), dist_c(gen), dist_c(gen));
+        float light_max = std::fmaxf(std::fmaxf(color.r, color.r), color.b);
+        const float constant = 1.0;
+        const float linear = 0.7;
+        const float quadratic = 1.8;
+        float radius =
+            (-linear +
+             std::sqrtf(linear * linear -
+                        4 * quadratic *
+                            (constant - (256.0f / 5.0f) * light_max))) /
+            (2.0f * quadratic);
+        lights_deferred_[i].position = position;
+        lights_deferred_[i].color = color;
+        lights_deferred_[i].radius = radius;
+    }
 
     std::cout << "init Rasterizer ok" << std::endl;
 }
@@ -60,7 +84,9 @@ void Rasterizer::render() {
     // post_process();
 }
 
-GLuint Rasterizer::get_image_id() const { return fbo_.attach_color_id; }
+GLuint Rasterizer::get_image_id() const {
+    return multi_color_fbo_.get_attach_color_id(0);
+}
 
 void Rasterizer::forward_render() {
     glEnable(GL_DEPTH_TEST);
@@ -166,7 +192,103 @@ void Rasterizer::forward_render() {
     post_process_forward();
 }
 
-void Rasterizer::deferred_render() {}
+void Rasterizer::deferred_render() {
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(true);
+    // 启用面剔除
+    glEnable(GL_CULL_FACE);
+
+    // 绘制 GBuffer
+    gbuffer_fbo_.bind();
+    glViewport(0, 0, Scene::width, Scene::height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    auto projection = Scene::camera->get_projection();
+    auto view = Scene::camera->get_view_mat();
+
+    gbuffer_shader_.use();
+    gbuffer_shader_.set_mat4("projection", projection);
+    gbuffer_shader_.set_mat4("view", view);
+    gbuffer_shader_.set_int("albedoMap", 0);
+    gbuffer_shader_.set_int("normalMap", 1);
+    gbuffer_shader_.set_int("metallicMap", 2);
+    gbuffer_shader_.set_int("roughnessMap", 3);
+    gbuffer_shader_.set_int("aoMap", 4);
+
+    for (auto& entity : Scene::entities) {
+        gbuffer_shader_.set_mat4("model", entity.obj->get_transform_mat4());
+
+        auto& prop = entity.material_prop;
+        if (prop.albedo_map != nullptr) prop.albedo_map->bind(0);
+        if (prop.normal_map != nullptr) prop.normal_map->bind(1);
+        if (prop.metallic_map != nullptr) prop.metallic_map->bind(2);
+        if (prop.roughness_map != nullptr) prop.roughness_map->bind(3);
+        if (prop.ao_map != nullptr) prop.ao_map->bind(4);
+
+        entity.obj->render();
+    }
+
+    gbuffer_fbo_.unbind();
+
+    // light着色
+    multi_color_fbo_.bind();
+    glViewport(0, 0, Scene::width, Scene::height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    deferred_shading_shader_.use();
+    deferred_shading_shader_.set_float("farPlane", Scene::point_light[0].z_far);
+    deferred_shading_shader_.set_vec3("camPos", Scene::camera->translation);
+    deferred_shading_shader_.set_bool("IBL", false);
+    deferred_shading_shader_.set_int("gAbedoM", 0);
+    deferred_shading_shader_.set_int("gNormalR", 1);
+    deferred_shading_shader_.set_int("gPositionA", 2);
+    // deferred_shading_shader_.set_int("irradianceMap", 3);
+    // deferred_shading_shader_.set_int("prefilterMap", 4);
+    // deferred_shading_shader_.set_int("brdfLUT", 5);
+
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(0));
+    glActiveTexture(GL_TEXTURE0 + 1);
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(1));
+    glActiveTexture(GL_TEXTURE0 + 2);
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(2));
+
+    for (int i = 0; i < DEFERRED_LIGHT_COUNT; i++) {
+        std::string num = std::to_string(i);
+
+        deferred_shading_shader_.set_vec3("lights[" + num + "].position",
+                                          lights_deferred_[i].position);
+        deferred_shading_shader_.set_vec3("lights[" + num + "].color",
+                                          lights_deferred_[i].color);
+        deferred_shading_shader_.set_float("lights[" + num + "].radius",
+                                           lights_deferred_[i].radius);
+    }
+
+    screen_quad_.render();
+
+    // 拷贝gbuffer的深度图
+    gbuffer_fbo_.blit_to(multi_color_fbo_, GL_DEPTH_BUFFER_BIT);
+    multi_color_fbo_.bind();
+    // 用球显示灯位置
+    show_light_shader_.use();
+    show_light_shader_.set_mat4("projection", projection);
+    show_light_shader_.set_mat4("view", view);
+    for (int i = 0; i < DEFERRED_LIGHT_COUNT; i++) {
+        auto model = glm::mat4(1.0f);
+        model = glm::translate(model, lights_deferred_[i].position);
+        model = glm::scale(model, glm::vec3(0.125f));
+        show_light_shader_.set_mat4("model", model);
+        show_light_shader_.set_vec3("lightColor", lights_deferred_[i].color);
+
+        light_sphere_.render();
+    }
+
+    multi_color_fbo_.unbind();
+
+    // post_process_forward();
+}
 
 void Rasterizer::load_shaders() {
     skybox_shader_ = Shader("assets/shaders/skybox/skybox.vs",
@@ -185,19 +307,18 @@ void Rasterizer::load_shaders() {
     light_mesh_shader_ =
         Shader("assets/shaders/light_mesh.vs", "assets/shaders/light_mesh.fs");
 
-    // depth_shader_ =
-    //     Shader("assets/shaders/depth_pass.vs",
-    //     "assets/shaders/depth_pass.fs");
-
-    // cluster_cull_light_shader_ =
-    //     Shader("assets/shaders/cluster_cull_light_shader.comp");
-
-    // pbr_cluster_shader_ = Shader("assets/shaders/pbr_cluster_shader.vs",
-    //                              "assets/shaders/pbr_cluster_shader.fs");
-
     point_light_shader_ = Shader("assets/shaders/point_light_shader.vs",
                                  "assets/shaders/point_light_shader.fs",
                                  "assets/shaders/point_light_shader.gs");
+
+    gbuffer_shader_ = Shader("assets/shaders/deferred/gbuffer.vs",
+                             "assets/shaders/deferred/gbuffer.fs");
+    deferred_shading_shader_ =
+        Shader("assets/shaders/deferred/deferred_shading.vs",
+               "assets/shaders/deferred/deferred_shading.fs");
+
+    show_light_shader_ =
+        Shader("assets/shaders/show_light.vs", "assets/shaders/show_light.fs");
 }
 
 void Rasterizer::init_ssbo() {
@@ -248,31 +369,32 @@ void Rasterizer::init_ssbo() {
     // }
 
     // 设置light_ssbo_
-    {
-        glGenBuffers(1, &light_ssbo_);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, light_ssbo_);
-        glBufferData(GL_SHADER_STORAGE_BUFFER,
-                     MAX_LIGHTS * sizeof(struct GPULight), NULL,
-                     GL_DYNAMIC_DRAW);
+    // {
+    //     glGenBuffers(1, &light_ssbo_);
+    //     glBindBuffer(GL_SHADER_STORAGE_BUFFER, light_ssbo_);
+    //     glBufferData(GL_SHADER_STORAGE_BUFFER,
+    //                  MAX_LIGHTS * sizeof(struct GPULight), NULL,
+    //                  GL_DYNAMIC_DRAW);
 
-        GLint buf_mask = GL_READ_WRITE;
+    //     GLint buf_mask = GL_READ_WRITE;
 
-        struct GPULight* lights =
-            (struct GPULight*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, buf_mask);
-        PointLight* light;
-        for (unsigned int i = 0; i < num_lights_; ++i) {
-            // Fetching the light from the current scene
-            light = &Scene::point_light[i];
-            lights[i].position = light->position;
-            lights[i].color = light->color;
-            lights[i].enabled = 1;
-            lights[i].intensity = 1.0f;
-            lights[i].range = 65.0f;
-        }
-        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, light_ssbo_);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    }
+    //     struct GPULight* lights =
+    //         (struct GPULight*)glMapBuffer(GL_SHADER_STORAGE_BUFFER,
+    //         buf_mask);
+    //     PointLight* light;
+    //     for (unsigned int i = 0; i < num_lights_; ++i) {
+    //         // Fetching the light from the current scene
+    //         light = &Scene::point_light[i];
+    //         lights[i].position = light->position;
+    //         lights[i].color = light->color;
+    //         lights[i].enabled = 1;
+    //         lights[i].intensity = 1.0f;
+    //         lights[i].range = 65.0f;
+    //     }
+    //     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    //     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, light_ssbo_);
+    //     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    // }
 
     // 设置light_index_list_ssbo_
     // A list of indices to the lights that are active and intersect with a
@@ -401,6 +523,9 @@ void Rasterizer::post_process_forward() {
     // 模糊
     bool horizontal = true, first_iteration = true;
     unsigned int amount = 10;
+
+    auto color_1 = multi_color_fbo_.get_attach_color_id(1);
+
     blur_shader_.use();
     blur_shader_.set_int("image", 0);
     for (unsigned int i = 0; i < amount; i++) {
@@ -410,11 +535,11 @@ void Rasterizer::post_process_forward() {
         blur_shader_.set_bool("horizontal", horizontal);
         glBindTexture(GL_TEXTURE_2D,
                       first_iteration
-                          ? multi_color_fbo_.attach_color_1_id
-                          : ping_pong_fbos_[!horizontal]
-                                .attach_color_id);  // bind texture of other
-                                                    // framebuffer (or scene
-        screen_quad_.render();                      // if first iteration)
+                          ? color_1
+                          : ping_pong_fbos_[!horizontal].get_attach_color_id(
+                                0));  // bind texture of other
+                                      // framebuffer (or scene
+        screen_quad_.render();        // if first iteration)
 
         horizontal = !horizontal;
         if (first_iteration) first_iteration = false;
@@ -428,9 +553,10 @@ void Rasterizer::post_process_forward() {
     bloom_shader_.set_int("scene", 0);
     bloom_shader_.set_int("bloomBlur", 1);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, multi_color_fbo_.attach_color_id);
+    glBindTexture(GL_TEXTURE_2D, multi_color_fbo_.get_attach_color_id(0));
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, ping_pong_fbos_[!horizontal].attach_color_id);
+    glBindTexture(GL_TEXTURE_2D,
+                  ping_pong_fbos_[!horizontal].get_attach_color_id(0));
     bloom_shader_.set_bool("bloom", true);
     bloom_shader_.set_float("exposure", 1.0);
     screen_quad_.render();

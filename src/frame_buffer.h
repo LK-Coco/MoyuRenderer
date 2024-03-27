@@ -8,13 +8,14 @@
 namespace MR {
 
 enum class GLAttachmentType {
-    MULT_2D_HDR_COL,
-    SING_2D_HDR_COL,
-    MULT_2D_HDR_DEP,
-    SING_2D_HDR_DEP,
-    SING_2D_HDR_COL_CLAMP,
-    SING_2D_HDR_DEP_BORDER,
-    SING_2D_HDR_COL_FLOAT,
+    COL_MULT_HDR_2D,
+    COL_RGBA_HDR_2D,
+    COL_RGB_HDR_2D,
+    DEP_MULT_HDR_2D,
+    DEP_HDR_2D,
+    COL_HDR_CLAMP_2D,
+    DEP_HDR_BORDER_2D,
+    COL_HDR_FLOAT_2D,
 };
 
 struct FrameBuffer {
@@ -34,11 +35,17 @@ struct FrameBuffer {
 
     bool check_completeness(const char* name);
 
+    GLuint get_attach_color_id(uint8_t index) const {
+        return attach_color_ids_[index];
+    }
+
     int width, height;
 
     GLuint fb_id;
-    GLuint attach_color_id;
     GLuint attach_depth_id;
+
+protected:
+    std::vector<GLuint> attach_color_ids_;
 };
 
 struct CaptureFBO : public FrameBuffer {
@@ -53,23 +60,9 @@ struct CaptureFBO : public FrameBuffer {
     GLuint rbo_id;
 };
 
-struct MultiSampledFBO : public FrameBuffer {
-    MultiSampledFBO(int w, int h) : FrameBuffer(w, h) {}
-
-    void init() override;
-};
-
 struct MultiColorFBO : public FrameBuffer {
     MultiColorFBO(int w, int h) : FrameBuffer(w, h) {}
     void init() override;
-
-    GLuint attach_color_1_id;
-};
-
-struct ResolveBufferFBO : public FrameBuffer {
-    void init() override;
-
-    GLuint blur_high_end;
 };
 
 struct QuadHDRBufferFBO : public FrameBuffer {
@@ -93,6 +86,13 @@ struct PointShadowBufferFBO : public FrameBuffer {
 
     // private:
     //     TextureCube tex_drawing_;
+};
+
+struct GBufferFBO : public FrameBuffer {
+    GBufferFBO() : FrameBuffer(1280, 720) {}
+    GBufferFBO(int w, int h) : FrameBuffer(w, h) {}
+
+    void init() override;
 };
 
 }  // namespace MR

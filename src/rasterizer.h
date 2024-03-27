@@ -4,6 +4,8 @@
 #include "frame_buffer.h"
 #include "shading/material_property.h"
 #include "object/screen_quad.h"
+#include "object/sphere.h"
+#include "light.h"
 
 namespace MR {
 
@@ -11,6 +13,8 @@ enum class RenderMode {
     Forward,
     Deferred,
 };
+
+#define DEFERRED_LIGHT_COUNT 32
 
 class Rasterizer : public Renderer {
 public:
@@ -20,7 +24,7 @@ public:
 
     GLuint get_image_id() const override;
 
-    RenderMode render_mode = RenderMode::Forward;
+    RenderMode render_mode = RenderMode::Deferred;
 
 private:
     void load_shaders();
@@ -52,6 +56,15 @@ private:
     std::vector<PointShadowBufferFBO> point_shadow_fbos_;
     std::vector<QuadHDRBufferFBO> ping_pong_fbos_;
     FrameBuffer fbo_;
+
+    // defferred
+    GBufferFBO gbuffer_fbo_;
+    Shader gbuffer_shader_;
+    Shader deferred_shading_shader_;
+    Shader show_light_shader_;
+    Sphere light_sphere_;
+
+    GPULight lights_deferred_[DEFERRED_LIGHT_COUNT];
 
     Shader skybox_shader_;
     Shader dir_light_shader_;
