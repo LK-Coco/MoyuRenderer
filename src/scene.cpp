@@ -17,9 +17,7 @@ std::string Scene::cur_model_path = "assets/AfricanHead/african_head.obj";
 
 std::shared_ptr<Skybox> Scene::skybox = nullptr;
 
-std::shared_ptr<Camera> Scene::camera = std::make_shared<Camera>(
-    glm::vec3(0.f, 0.f, 3.f), glm::vec3(0, 0, 0), 45.0,
-    (float)Scene::width / (float)Scene::height, 1, 1000);
+std::shared_ptr<Camera> Scene::camera;
 
 std::shared_ptr<Object> Scene::model = nullptr;
 

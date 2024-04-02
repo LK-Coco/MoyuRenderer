@@ -13,11 +13,11 @@ uniform mat4 projection;
 
 void main()
 {
-    vec4 worldPos = model * vec4(aPos, 1.0);
+    vec4 worldPos =  model * vec4(aPos, 1.0);
     WorldPos = worldPos.xyz; 
     TexCoords = aTexCoords;
     
-    mat3 normalMatrix = transpose(inverse(mat3(model)));
+    mat3 normalMatrix = transpose(inverse(mat3( model)));
     Normal = normalMatrix * aNormal;
 
     gl_Position = projection * view * worldPos;

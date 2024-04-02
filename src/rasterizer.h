@@ -6,6 +6,7 @@
 #include "object/screen_quad.h"
 #include "object/sphere.h"
 #include "light.h"
+#include "mygl/mygl.h"
 
 namespace MR {
 
@@ -71,6 +72,8 @@ private:
     GLuint ssao_fbo_;
     GLuint ssao_fbo_color_;
     GLuint ssao_noise_tex_;
+    QuadHDRBufferFBO ssao_blur_fbo_;
+    Shader ssao_blur_shader_;
 
     GPULight lights_deferred_[DEFERRED_LIGHT_COUNT];
 

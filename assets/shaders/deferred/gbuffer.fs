@@ -40,7 +40,7 @@ void main()
     gPositionA.xyz = WorldPos;
     gPositionA.z = texture(aoMap, TexCoords).r;
 
-    gNormalR.rgb = getNormalFromMap();
+    gNormalR.rgb = normalize(Normal);//getNormalFromMap();
     gNormalR.a = texture(roughnessMap, TexCoords).r;
 
     gAlbedoM.rgb = pow(texture(albedoMap, TexCoords).rgb, vec3(2.2));

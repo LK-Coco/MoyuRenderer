@@ -30,7 +30,7 @@ GLuint attach(GLAttachmentType attach_type, unsigned int attach_index,
         case GLAttachmentType::COL_RGBA_HDR_2D:
             glBindTexture(GL_TEXTURE_2D, tex_id);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0,
-                         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                         GL_RGBA, GL_FLOAT, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -274,16 +274,13 @@ void GBufferFBO::init() {
     glGenFramebuffers(1, &fb_id);
     glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 
-    auto albedo_m_id =
-        attach(GLAttachmentType::COL_RGBA_HDR_2D, 0, width, height);
-    auto normal_r_id =
-        attach(GLAttachmentType::COL_RGBA_HDR_2D, 1, width, height);
-    auto position_a_id =
-        attach(GLAttachmentType::COL_RGBA_HDR_2D, 2, width, height);
+    gAlbedo = attach(GLAttachmentType::COL_RGBA_HDR_2D, 0, width, height);
+    gNormal = attach(GLAttachmentType::COL_RGBA_HDR_2D, 1, width, height);
+    gPosition = attach(GLAttachmentType::COL_RGBA_HDR_2D, 2, width, height);
 
-    attach_color_ids_.push_back(albedo_m_id);
-    attach_color_ids_.push_back(normal_r_id);
-    attach_color_ids_.push_back(position_a_id);
+    // attach_color_ids_.push_back(gAlbedo);
+    // attach_color_ids_.push_back(gNormal);
+    // attach_color_ids_.push_back(gPosition);
 
     attach_depth_id = attach(GLAttachmentType::DEP_HDR_2D, 0, width, height);
 

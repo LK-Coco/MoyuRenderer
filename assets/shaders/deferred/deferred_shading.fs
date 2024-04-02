@@ -228,7 +228,7 @@ vec3 CalcPointLight(int index,vec3 worldPos,vec3 V,vec3 N,float roughness,float 
 void main(){
     vec4 albedoM     = texture(gAlbedoM, TexCoords).rgba;
     float ssao_val     = texture(ssao, TexCoords).r;
-    vec3 albedo = albedoM.rgb * ssao_val;
+    vec3 albedo = albedoM.rgb;// * ssao_val;
     float metallic  = albedoM.a;
 
     vec4 normalR = texture(gNormalR, TexCoords).rgba;

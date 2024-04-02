@@ -12,7 +12,8 @@ float lerp(float a, float b, float f) { return a + f * (b - a); }
 Rasterizer::Rasterizer()
     : multi_color_fbo_(Scene::width, Scene::height),
       fbo_(Scene::width, Scene::height),
-      gbuffer_fbo_(Scene::width, Scene::height) {
+      gbuffer_fbo_(Scene::width, Scene::height),
+      ssao_blur_fbo_(Scene::width, Scene::height) {
     num_lights_ = Scene::point_light.size();
     for (int i = 0; i < num_lights_; ++i) {
         auto res = Scene::point_light[i].shadow_res;
@@ -34,6 +35,8 @@ Rasterizer::Rasterizer()
     fbo_.init();
 
     gbuffer_fbo_.init();
+
+    ssao_blur_fbo_.init();
 
     load_shaders();
 
@@ -84,6 +87,14 @@ Rasterizer::Rasterizer()
         ssao_noise_.push_back(noise.y);
         ssao_noise_.push_back(noise.z);
     }
+
+    // ssao_noise_tex2d_.bind();
+    // ssao_noise_tex2d_.set_data(GL_RGBA16F, 4, 4, GL_RGB, GL_FLOAT,
+    //                            &ssao_noise_[0]);
+    // ssao_noise_tex2d_.set_min_filter(GL_NEAREST);
+    // ssao_noise_tex2d_.set_mag_filter(GL_NEAREST);
+    // ssao_noise_tex2d_.set_wrap_s(GL_REPEAT);
+    // ssao_noise_tex2d_.set_wrap_t(GL_REPEAT);
 
     glGenTextures(1, &ssao_noise_tex_);
     glBindTexture(GL_TEXTURE_2D, ssao_noise_tex_);
@@ -290,13 +301,27 @@ void Rasterizer::deferred_render() {
                               ssao_kernel_[i].z);
     ssao_shader_.set_mat4("projection", projection);
     glActiveTexture(GL_TEXTURE0 + 0);
-    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(2));
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.gPosition);
     glActiveTexture(GL_TEXTURE0 + 1);
-    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(1));
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.gNormal);
     glActiveTexture(GL_TEXTURE0 + 2);
     glBindTexture(GL_TEXTURE_2D, ssao_noise_tex_);
+    ssao_shader_.set_int("gPosition", 0);
+    ssao_shader_.set_int("gNormal", 1);
+    ssao_shader_.set_int("texNoise", 2);
     screen_quad_.render();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // ssao blur
+    ssao_blur_fbo_.bind();
+
+    ssao_blur_shader_.use();
+    ssao_blur_shader_.set_int("ssaoInput", 0);
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D, ssao_fbo_color_);
+    screen_quad_.render();
+
+    ssao_blur_fbo_.unbind();
 
     // light着色
     multi_color_fbo_.bind();
@@ -311,18 +336,19 @@ void Rasterizer::deferred_render() {
     deferred_shading_shader_.set_int("gAbedoM", 0);
     deferred_shading_shader_.set_int("gNormalR", 1);
     deferred_shading_shader_.set_int("gPositionA", 2);
+    deferred_shading_shader_.set_int("ssao", 3);
     // deferred_shading_shader_.set_int("irradianceMap", 3);
     // deferred_shading_shader_.set_int("prefilterMap", 4);
     // deferred_shading_shader_.set_int("brdfLUT", 5);
 
     glActiveTexture(GL_TEXTURE0 + 0);
-    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(0));
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.gAlbedo);
     glActiveTexture(GL_TEXTURE0 + 1);
-    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(1));
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.gNormal);
     glActiveTexture(GL_TEXTURE0 + 2);
-    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(2));
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.gPosition);
     glActiveTexture(GL_TEXTURE0 + 3);
-    glBindTexture(GL_TEXTURE_2D, ssao_fbo_color_);
+    glBindTexture(GL_TEXTURE_2D, ssao_blur_fbo_.get_attach_color_id(0));
 
     for (int i = 0; i < DEFERRED_LIGHT_COUNT; i++) {
         std::string num = std::to_string(i);
@@ -389,8 +415,11 @@ void Rasterizer::load_shaders() {
     show_light_shader_ =
         Shader("assets/shaders/show_light.vs", "assets/shaders/show_light.fs");
 
-    ssao_shader_ = Shader("assets/shaders/deferred/deferred_shading.vs",
+    ssao_shader_ = Shader("assets/shaders/deferred/ssao.vs",
                           "assets/shaders/deferred/ssao.fs");
+
+    ssao_blur_shader_ = Shader("assets/shaders/deferred/ssao.vs",
+                               "assets/shaders/deferred/ssao_blur.fs");
 }
 
 void Rasterizer::init_ssbo() {

@@ -93,6 +93,10 @@ struct GBufferFBO : public FrameBuffer {
     GBufferFBO(int w, int h) : FrameBuffer(w, h) {}
 
     void init() override;
+
+    GLuint gPosition;
+    GLuint gNormal;
+    GLuint gAlbedo;
 };
 
 }  // namespace MR
