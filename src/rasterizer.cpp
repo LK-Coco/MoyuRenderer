@@ -293,8 +293,8 @@ void Rasterizer::deferred_render() {
     glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(2));
     glActiveTexture(GL_TEXTURE0 + 1);
     glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(1));
-    glActiveTexture(GL_TEXTURE0 + 0);
-    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(2));
+    glActiveTexture(GL_TEXTURE0 + 2);
+    glBindTexture(GL_TEXTURE_2D, ssao_noise_tex_);
     screen_quad_.render();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
