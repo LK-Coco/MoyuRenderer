@@ -175,11 +175,11 @@ void Shader::set_bool(const std::string& name, bool val) const {
 }
 
 void Shader::set_int(const std::string& name, int val) const {
-    glUniform1i(glGetUniformLocation(id_, name.c_str()), (int)val);
+    glUniform1i(glGetUniformLocation(id_, name.c_str()), val);
 }
 
 void Shader::set_float(const std::string& name, float val) const {
-    glUniform1f(glGetUniformLocation(id_, name.c_str()), (int)val);
+    glUniform1f(glGetUniformLocation(id_, name.c_str()), val);
 }
 
 void Shader::set_vec2(const std::string& name, const glm::vec2& val) const {

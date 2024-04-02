@@ -7,6 +7,8 @@
 
 namespace MR {
 
+float lerp(float a, float b, float f) { return a + f * (b - a); }
+
 Rasterizer::Rasterizer()
     : multi_color_fbo_(Scene::width, Scene::height),
       fbo_(Scene::width, Scene::height),
@@ -58,6 +60,52 @@ Rasterizer::Rasterizer()
         lights_deferred_[i].color = color;
         lights_deferred_[i].radius = radius;
     }
+
+    // 填充ssao kernel数据
+    std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
+    std::default_random_engine generator;
+    for (unsigned int i = 0; i < 64; ++i) {
+        glm::vec3 sample(randomFloats(generator) * 2.0 - 1.0,
+                         randomFloats(generator) * 2.0 - 1.0,
+                         randomFloats(generator));
+        sample = glm::normalize(sample);
+        sample *= randomFloats(generator);
+        float scale = (float)i / 64.0;
+        scale = lerp(0.1f, 1.0f, scale * scale);
+        sample *= scale;
+        ssao_kernel_.push_back(sample);
+    }
+
+    // ssao noise 数据填充
+    for (unsigned int i = 0; i < 16; i++) {
+        glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0,
+                        randomFloats(generator) * 2.0 - 1.0, 0.0f);
+        ssao_noise_.push_back(noise.x);
+        ssao_noise_.push_back(noise.y);
+        ssao_noise_.push_back(noise.z);
+    }
+
+    glGenTextures(1, &ssao_noise_tex_);
+    glBindTexture(GL_TEXTURE_2D, ssao_noise_tex_);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT,
+                 &ssao_noise_[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glGenFramebuffers(1, &ssao_fbo_);
+    glBindFramebuffer(GL_FRAMEBUFFER, ssao_fbo_);
+
+    glGenTextures(1, &ssao_fbo_color_);
+    glBindTexture(GL_TEXTURE_2D, ssao_fbo_color_);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, Scene::width, Scene::height, 0,
+                 GL_RED, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           ssao_fbo_color_, 0);
 
     std::cout << "init Rasterizer ok" << std::endl;
 }
@@ -231,6 +279,25 @@ void Rasterizer::deferred_render() {
 
     gbuffer_fbo_.unbind();
 
+    // ssao
+    glBindFramebuffer(GL_FRAMEBUFFER, ssao_fbo_);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    ssao_shader_.use();
+    for (unsigned int i = 0; i < 64; ++i)
+        ssao_shader_.set_vec3("samples[" + std::to_string(i) + "]",
+                              ssao_kernel_[i].x, ssao_kernel_[i].y,
+                              ssao_kernel_[i].z);
+    ssao_shader_.set_mat4("projection", projection);
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(2));
+    glActiveTexture(GL_TEXTURE0 + 1);
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(1));
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(2));
+    screen_quad_.render();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     // light着色
     multi_color_fbo_.bind();
     glViewport(0, 0, Scene::width, Scene::height);
@@ -254,6 +321,8 @@ void Rasterizer::deferred_render() {
     glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(1));
     glActiveTexture(GL_TEXTURE0 + 2);
     glBindTexture(GL_TEXTURE_2D, gbuffer_fbo_.get_attach_color_id(2));
+    glActiveTexture(GL_TEXTURE0 + 3);
+    glBindTexture(GL_TEXTURE_2D, ssao_fbo_color_);
 
     for (int i = 0; i < DEFERRED_LIGHT_COUNT; i++) {
         std::string num = std::to_string(i);
@@ -319,6 +388,9 @@ void Rasterizer::load_shaders() {
 
     show_light_shader_ =
         Shader("assets/shaders/show_light.vs", "assets/shaders/show_light.fs");
+
+    ssao_shader_ = Shader("assets/shaders/deferred/deferred_shading.vs",
+                          "assets/shaders/deferred/ssao.fs");
 }
 
 void Rasterizer::init_ssbo() {

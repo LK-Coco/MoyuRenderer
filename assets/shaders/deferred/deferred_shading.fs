@@ -4,11 +4,11 @@ layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
 
 in vec2 TexCoords;
-in vec3 WorldPos;
 
 uniform sampler2D gAlbedoM;
 uniform sampler2D gNormalR;
 uniform sampler2D gPositionA;
+uniform sampler2D ssao;
 
 
 // IBL
@@ -183,15 +183,15 @@ vec3 CalcDirLight(vec3 V, vec3 N, vec3 albedo, float metallic, float roughness,f
 }
 */
 
-vec3 CalcPointLight(int index,vec3 V,vec3 N,float roughness,float metallic,vec3 albedo,vec3 F0,float viewDistance)
+vec3 CalcPointLight(int index,vec3 worldPos,vec3 V,vec3 N,float roughness,float metallic,vec3 albedo,vec3 F0,float viewDistance)
 {
     // light的直接光贡献
     vec3 lightPosition = lights[index].position;
-    float distance = length(lightPosition - WorldPos);
+    float distance = length(lightPosition - worldPos);
     if(distance > lights[index].radius) return vec3(0.0);
 
 
-    vec3 L = normalize(lightPosition - WorldPos);
+    vec3 L = normalize(lightPosition - worldPos);
     vec3 H = normalize(V + L);
     float attenuation = 1.0 / (distance * distance);
     //float attenuation = 1.0 / (1.0 + 0.7*distance + 1.8 * distance * distance);
@@ -215,7 +215,7 @@ vec3 CalcPointLight(int index,vec3 V,vec3 N,float roughness,float metallic,vec3 
 
     vec3 radiance = (kD * albedo / PI + specular) * radianceIn * NdotL;  
     // 添加点光源阴影  
-    // vec3 fragToLight = WorldPos - lightPosition;
+    // vec3 fragToLight = worldPos - lightPosition;
     // float shadow = ShadowCalculationPoint(index,fragToLight,viewDistance);
     // radiance *= (1.0 - shadow);
 
@@ -227,7 +227,8 @@ vec3 CalcPointLight(int index,vec3 V,vec3 N,float roughness,float metallic,vec3 
 
 void main(){
     vec4 albedoM     = texture(gAlbedoM, TexCoords).rgba;
-    vec3 albedo = albedoM.rgb;
+    float ssao_val     = texture(ssao, TexCoords).r;
+    vec3 albedo = albedoM.rgb * ssao_val;
     float metallic  = albedoM.a;
 
     vec4 normalR = texture(gNormalR, TexCoords).rgba;
@@ -253,7 +254,7 @@ void main(){
 
     for(int i = 0; i < NR_LIGHTS; ++i) 
     {
-        Lo += CalcPointLight(i,V,N,roughness,metallic,albedo,F0,viewDistance); 
+        Lo += CalcPointLight(i,WorldPos,V,N,roughness,metallic,albedo,F0,viewDistance); 
     }  
 
     // 添加平行光阴影

@@ -9,9 +9,9 @@
 
 namespace MR {
 
-int Scene::width = 1280;
+std::uint32_t Scene::width = 1280;
 
-int Scene::height = 720;
+std::uint32_t Scene::height = 720;
 
 std::string Scene::cur_model_path = "assets/AfricanHead/african_head.obj";
 
@@ -47,8 +47,8 @@ void Scene::load_json(const char* file_path) {
     file >> scene_json;
 
     //  width height
-    width = (float)scene_json["scene_width"];
-    height = (float)scene_json["scene_height"];
+    width = (std::uint32_t)scene_json["scene_width"];
+    height = (std::uint32_t)scene_json["scene_height"];
 
     // skybox
     // 预处理hdr环境贴图

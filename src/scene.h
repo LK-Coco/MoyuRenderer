@@ -11,8 +11,8 @@ namespace MR {
 
 class Scene {
 public:
-    static int width;
-    static int height;
+    static std::uint32_t width;
+    static std::uint32_t height;
     static std::string cur_model_path;
     static std::shared_ptr<Skybox> skybox;
     static std::shared_ptr<Camera> camera;

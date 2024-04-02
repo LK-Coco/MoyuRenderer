@@ -64,6 +64,14 @@ private:
     Shader show_light_shader_;
     Sphere light_sphere_;
 
+    // ssao
+    std::vector<glm::vec3> ssao_kernel_;
+    std::vector<float> ssao_noise_;
+    Shader ssao_shader_;
+    GLuint ssao_fbo_;
+    GLuint ssao_fbo_color_;
+    GLuint ssao_noise_tex_;
+
     GPULight lights_deferred_[DEFERRED_LIGHT_COUNT];
 
     Shader skybox_shader_;
