@@ -10,108 +10,92 @@
 
 namespace MR {
 
-void PBRMaterial::set_maps(const std::string& albedo_map_path,
-                           const std::string& normal_map_path,
-                           const std::string& metallic_map_path,
-                           const std::string& roughness_map_path,
-                           const std::string& ao_map_path) {
-    shader_->use();
-    set_albedo_map(albedo_map_path);
-    set_normal_map(normal_map_path);
-    set_metallic_map(metallic_map_path);
-    set_roughness_map(roughness_map_path);
-    set_ao_map(ao_map_path);
+void PBRMaterial::init() {
+    shader_ = Shader("assets/shaders/pbr/pbr.vs", "assets/shaders/pbr/pbr.fs");
 
-    // TODO 临时写死
-    irradiance_map_ = Resources::get_texture_cube("irradiance_map");
-    shader_->set_int("irradianceMap", 5);
-    prefilter_map_ = Resources::get_texture_cube("prefilter_map");
-    shader_->set_int("prefilterMap", 6);
-    lut_map_ = Resources::get_texture("brdf_lut_map");
-    shader_->set_int("brdfLUT", 7);
-}
-
-void PBRMaterial::set_albedo_map(const std::string& file_path) {
-    if (albedo_map_ = Resources::get_texture("albedo_map");
-        albedo_map_ != nullptr) {
-        Resources::update_texture("albedo_map", file_path);
-    } else {
-        albedo_map_ = Resources::load_texture("albedo_map", file_path);
+    albedo_map = Resources::get_texture(albedo_map_path);
+    if (albedo_map == nullptr) {
+        albedo_map = Resources::load_texture(albedo_map_path, albedo_map_path);
+    }
+    normal_map = Resources::get_texture(normal_map_path);
+    if (normal_map == nullptr) {
+        normal_map = Resources::load_texture(normal_map_path, normal_map_path);
+    }
+    metallic_map = Resources::get_texture(metallic_map_path);
+    if (metallic_map == nullptr) {
+        metallic_map =
+            Resources::load_texture(metallic_map_path, metallic_map_path);
+    }
+    roughness_map = Resources::get_texture(roughness_map_path);
+    if (roughness_map == nullptr) {
+        roughness_map =
+            Resources::load_texture(roughness_map_path, roughness_map_path);
+    }
+    ao_map = Resources::get_texture(ao_map_path);
+    if (ao_map == nullptr) {
+        ao_map = Resources::load_texture(ao_map_path, ao_map_path);
     }
 
-    shader_->set_int("albedoMap", 0);
-}
-void PBRMaterial::set_normal_map(const std::string& file_path) {
-    normal_map_ = Resources::load_texture("normal_map", file_path);
+    irradiance_map = Resources::get_texture_cube("irradiance_map");
+    prefilter_map = Resources::get_texture_cube("prefilter_map");
+    lut_map = Resources::get_texture("brdf_lut_map");
 
-    shader_->set_int("normalMap", 1);
-}
-void PBRMaterial::set_metallic_map(const std::string& file_path) {
-    metallic_map_ = Resources::load_texture("metallic_map", file_path);
-
-    shader_->set_int("metallicMap", 2);
-}
-void PBRMaterial::set_roughness_map(const std::string& file_path) {
-    roughness_map_ = Resources::load_texture("roughness_map", file_path);
-
-    shader_->set_int("roughnessMap", 3);
-}
-void PBRMaterial::set_ao_map(const std::string& file_path) {
-    ao_map_ = Resources::load_texture("ao_map", file_path);
-
-    shader_->set_int("aoMap", 4);
+    shader_.use();
+    shader_.set_int("albedoMap", 0);
+    shader_.set_int("normalMap", 1);
+    shader_.set_int("metallicMap", 2);
+    shader_.set_int("roughnessMap", 3);
+    shader_.set_int("aoMap", 4);
+    shader_.set_int("irradianceMap", 5);
+    shader_.set_int("prefilterMap", 6);
+    shader_.set_int("brdfLUT", 7);
+    shader_.set_int("dirShadowMap", 8);
 }
 
-void PBRMaterial::display_ui() {
-    ImGui::Spacing();
+void PBRMaterial::set_uniform(std::shared_ptr<Object> obj) {
+    auto num_lights = Scene::point_light.size();
 
-    if (auto ret = Utils::imgui_image_button("albedo_map", "albedoMap");
-        ret.has_value()) {
-        set_albedo_map(ret.value());
-    }
-    if (auto ret = Utils::imgui_image_button("normal_map", "normalMap");
-        ret.has_value()) {
-    }
-    if (auto ret = Utils::imgui_image_button("metallic_map", "metallicMap");
-        ret.has_value()) {
-    }
-    if (auto ret = Utils::imgui_image_button("roughness_map", "roughnessMap");
-        ret.has_value()) {
-    }
-    if (auto ret = Utils::imgui_image_button("ao_map", "aoMap");
-        ret.has_value()) {
-    }
-}
+    shader_.use();
+    shader_.set_bool("IBL", IBL);
+    auto model = obj->get_transform_mat4();
+    shader_.set_mat4("model", model);
+    shader_.set_mat3("normalMatrix",
+                     glm::transpose(glm::inverse(glm::mat3(model))));
 
-void PBRMaterial::fill_unifrom(const Object& obj) {
-    glm::mat4 projection = Scene::camera->get_projection();
-    glm::mat4 view = Scene::camera->get_view_mat();
+    shader_.set_mat4("lightSpaceMatrix", Scene::dir_light.light_space_mat);
+    shader_.set_mat4("projection", Scene::camera->get_projection());
+    shader_.set_mat4("view", Scene::camera->get_view_mat());
+    shader_.set_vec3("camPos", Scene::camera->translation);
+    shader_.set_vec3("dirLight.direction", Scene::dir_light.direction);
+    shader_.set_vec3("dirLight.color", Scene::dir_light.color);
 
-    shader_->use();
-    shader_->set_mat4("projection", projection);
-    shader_->set_mat4("view", view);
-    glm::mat4 model = obj.get_transform_mat4();
-    shader_->set_mat4("model", model);
-    shader_->set_mat3("normalMatrix",
-                      glm::transpose(glm::inverse(glm::mat3(model))));
-    shader_->set_vec3("camPos", Scene::camera->translation);
+    shader_.set_int("pointLightCount", num_lights);
+    shader_.set_float("farPlane",
+                      Scene::point_light[0].z_far);  // TODO 修正
 
-    for (int i = 0; i < 4; i++) {
-        shader_->set_vec3("lightPositions[" + std::to_string(i) + "]",
-                          Scene::point_light[i].position);
-        shader_->set_vec3("lightColors[" + std::to_string(i) + "]",
-                          Scene::point_light[i].color);
+    if (albedo_map != nullptr) albedo_map->bind(0);
+    if (normal_map != nullptr) normal_map->bind(1);
+    if (metallic_map != nullptr) metallic_map->bind(2);
+    if (roughness_map != nullptr) roughness_map->bind(3);
+    if (ao_map != nullptr) ao_map->bind(4);
+    if (irradiance_map != nullptr) irradiance_map->bind(5);
+    if (prefilter_map != nullptr) prefilter_map->bind(6);
+    if (lut_map != nullptr) lut_map->bind(7);
+    glActiveTexture(GL_TEXTURE0 + 8);
+    glBindTexture(GL_TEXTURE_2D, Scene::dir_light.depth_map_tex_id);
+
+    for (int i = 0; i < num_lights; ++i) {
+        auto& light = Scene::point_light[i];
+        std::string num = std::to_string(i);
+
+        shader_.set_vec3(("pointLightPosition[" + num + "]").c_str(),
+                         light.position);
+        shader_.set_vec3(("pointLightColor[" + num + "]").c_str(), light.color);
+
+        shader_.set_int(("pointShadowMaps[" + num + "]").c_str(), 9 + i);
+        glActiveTexture(GL_TEXTURE0 + 9 + i);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, light.depth_map_tex_id);
     }
-
-    // bind texture
-    albedo_map_->bind(0);
-    normal_map_->bind(1);
-    metallic_map_->bind(2);
-    roughness_map_->bind(3);
-    ao_map_->bind(4);
-    irradiance_map_->bind(5);
-    prefilter_map_->bind(6);
-    lut_map_->bind(7);
 }
 
 }  // namespace MR

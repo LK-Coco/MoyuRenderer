@@ -9,31 +9,26 @@ namespace MR {
 
 class PBRMaterial : public Material {
 public:
-    void set_maps(const std::string& albedo_map_path,
-                  const std::string& normal_map_path,
-                  const std::string& metallic_map_path,
-                  const std::string& roughness_map_path,
-                  const std::string& ao_map_path);
+    void init() override;
 
-    void set_albedo_map(const std::string& file_path);
-    void set_normal_map(const std::string& file_path);
-    void set_metallic_map(const std::string& file_path);
-    void set_roughness_map(const std::string& file_path);
-    void set_ao_map(const std::string& file_path);
+    void set_uniform(std::shared_ptr<Object> obj) override;
 
-    void display_ui() override;
+public:
+    bool IBL = false;
+    std::string albedo_map_path = "assets/gold/albedo.png";
+    std::string normal_map_path = "assets/gold/normal.png";
+    std::string metallic_map_path = "assets/gold/metallic.png";
+    std::string roughness_map_path = "assets/gold/roughness.png";
+    std::string ao_map_path = "assets/gold/ao.png";
 
-    void fill_unifrom(const Object& obj) override;
-
-private:
-    Texture* albedo_map_;
-    Texture* normal_map_;
-    Texture* metallic_map_;
-    Texture* roughness_map_;
-    Texture* ao_map_;
-    TextureCube* irradiance_map_;
-    TextureCube* prefilter_map_;
-    Texture* lut_map_;
+    Texture* albedo_map;
+    Texture* normal_map;
+    Texture* metallic_map;
+    Texture* roughness_map;
+    Texture* ao_map;
+    TextureCube* irradiance_map;
+    TextureCube* prefilter_map;
+    Texture* lut_map;
 };
 
 }  // namespace MR

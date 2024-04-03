@@ -7,14 +7,13 @@ namespace MR {
 
 class BlinnMaterial : public Material {
 public:
-    void set_diffuse_map(const std::string& file_path);
+    void init() override;
 
-    void display_ui() override;
+    void set_uniform(std::shared_ptr<Object> obj) override;
 
-    void fill_unifrom(const Object& obj) override;
-
-private:
-    Texture* diffuse_map_;
+public:
+    Texture* diffuse_map;
+    std::string diffuse_map_path;
 };
 
 }  // namespace MR
