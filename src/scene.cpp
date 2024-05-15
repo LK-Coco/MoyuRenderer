@@ -17,6 +17,8 @@ std::string Scene::cur_model_path = "assets/AfricanHead/african_head.obj";
 
 std::shared_ptr<Skybox> Scene::skybox = nullptr;
 
+std::shared_ptr<TextureCube> Scene::skybox_tex = nullptr;
+
 std::shared_ptr<Camera> Scene::camera;
 
 std::shared_ptr<Object> Scene::model = nullptr;
@@ -86,6 +88,7 @@ void Scene::load_json(const char* file_path) {
         Resources::clac_brdf_lut("brdf_lut_map", brdf_lut_shader, fbo);
 
     // 设置天空盒
+    skybox_tex = std::make_shared<TextureCube>(hdr_cubemap);
     skybox = std::make_shared<Skybox>();
     skybox->set_hdr_cube_map(hdr_cubemap);
 

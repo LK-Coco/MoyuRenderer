@@ -6,7 +6,6 @@
 #include "object/screen_quad.h"
 #include "object/sphere.h"
 #include "light.h"
-#include "mygl/mygl.h"
 
 namespace MR {
 

@@ -15,6 +15,7 @@ public:
     static std::uint32_t height;
     static std::string cur_model_path;
     static std::shared_ptr<Skybox> skybox;
+    static std::shared_ptr<TextureCube> skybox_tex;
     static std::shared_ptr<Camera> camera;
     static std::shared_ptr<Object> model;
     static std::vector<PointLight> point_light;
